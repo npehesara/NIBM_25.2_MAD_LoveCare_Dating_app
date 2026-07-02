@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#08080A"
+    tools:context=".LoveSpaceActivity">
+
+    <!-- NEON HEADER -->
+    <TextView
+        android:id="@+id/tvHeaderTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="@string/lovespace_title"
+        android:textColor="#FF2E93"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.2"
+        android:shadowColor="#FF2E93"
+        android:shadowRadius="15"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- RELATIONSHIP LEVEL INDICATOR -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/levelIndicatorCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="24dp"
+        app:cardBackgroundColor="#14141C"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="12dp"
+        app:strokeColor="#50FF2E93"
+        app:strokeWidth="2dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvHeaderTitle">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/relationship_progress"
+                android:textColor="#9E9E9E"
+                android:textSize="12sp"
+                android:letterSpacing="0.1"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvLevelPercentTop"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="75%"
+                android:textColor="#FFFFFF"
+                android:textSize="48sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/topLevelProgress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:indicatorColor="#FF2E93"
+                app:trackColor="#2A2A36"
+                app:trackCornerRadius="10dp"
+                app:trackThickness="12dp"
+                android:progress="75" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- COUPLE VISUAL: GIRL - LEVEL - BOY -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/coupleVisualContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/levelIndicatorCard">
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="3dp"
+            android:background="#FF2E93"
+            android:alpha="0.3"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/ivGirlProfile"
+            android:layout_width="90dp"
+            android:layout_height="90dp"
+            android:layout_marginStart="32dp"
+            android:padding="4dp"
+            android:scaleType="centerCrop"
+            android:src="@android:drawable/ic_menu_gallery"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:shapeAppearanceOverlay="@style/CircleImage"
+            app:strokeColor="#FF2E93"
+            app:strokeWidth="3dp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/ivBoyProfile"
+            app:layout_constraintStart_toEndOf="@+id/ivGirlProfile"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="💞"
+                android:textSize="36sp"
+                android:shadowColor="#FF2E93"
+                android:shadowRadius="10" />
+
+            <TextView
+                android:id="@+id/tvMidLevelLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LEVEL 75"
+                android:textColor="#FF2E93"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:letterSpacing="0.1" />
+        </LinearLayout>
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/ivBoyProfile"
+            android:layout_width="90dp"
+            android:layout_height="90dp"
+            android:layout_marginEnd="32dp"
+            android:padding="4dp"
+            android:scaleType="centerCrop"
+            android:src="@android:drawable/ic_menu_gallery"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:shapeAppearanceOverlay="@style/CircleImage"
+            app:strokeColor="#FF2E93"
+            app:strokeWidth="3dp" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- CALENDAR DASHBOARD -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/calendarCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_margin="20dp"
+        app:cardBackgroundColor="#14141C"
+        app:cardCornerRadius="28dp"
+        app:strokeColor="#20FFFFFF"
+        app:strokeWidth="1dp"
+        app:layout_constraintBottom_toTopOf="@+id/btnAchievement"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/coupleVisualContainer">
+
+        <CalendarView
+            android:id="@+id/calendarView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:theme="@style/CustomCalendarTheme" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- ACHIEVEMENT BUTTON -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnAchievement"
+        android:layout_width="0dp"
+        android:layout_height="64dp"
+        android:layout_margin="20dp"
+        android:text="@string/add_achievement_btn"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:cornerRadius="20dp"
+        app:backgroundTint="#FF2E93"
+        app:rippleColor="#FFFFFF"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:elevation="8dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

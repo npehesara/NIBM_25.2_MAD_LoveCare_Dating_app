@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Lovecare" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">#FF2E93</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+    </style>
+
+    <!-- Style for Circular Images -->
+    <style name="CircleImage">
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- Basic styling for Calendar -->
+    <style name="CustomCalendarTheme" parent="Theme.AppCompat">
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:colorControlActivated">#FF2E93</item>
+        <item name="android:textColorSecondary">#9E9E9E</item>
+    </style>
+</resources>
