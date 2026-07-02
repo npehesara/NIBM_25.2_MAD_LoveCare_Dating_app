@@ -16,4 +16,9 @@
     <string name="dont_have_an_account">Don\'t have an account? </string>
     <string name="sign_up">Sign Up</string>
     <string name="logo_content_description">App Logo</string>
+    <string name="show_password">Show password</string>
+    <string name="login_with_heart">LOG IN  ❤</string>
+    <string name="facebook">Facebook</string>
+    <string name="google">Google</string>
+    <string name="apple">Apple</string>
 </resources>
