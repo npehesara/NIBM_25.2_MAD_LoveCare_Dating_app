@@ -1,0 +1,102 @@
+[
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\mipmap-mdpi_ic_launcher_round.webp.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\mipmap-mdpi\\ic_launcher_round.webp"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\layout_item_onboarding_option.xml.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\layout\\item_onboarding_option.xml"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\mipmap-anydpi-v26\\ic_launcher.xml"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\drawable_bg_onboarding_pink_gradient.xml.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\drawable\\bg_onboarding_pink_gradient.xml"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\drawable_loginbg.png.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\drawable\\loginbg.png"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\mipmap-xxxhdpi_ic_launcher_round.webp.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\mipmap-xxxhdpi\\ic_launcher_round.webp"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\drawable_bg_onboarding_white_card.xml.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\drawable\\bg_onboarding_white_card.xml"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\mipmap-xhdpi_ic_launcher_round.webp.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\mipmap-xhdpi\\ic_launcher_round.webp"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\mipmap-hdpi_ic_launcher.webp.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\mipmap-hdpi\\ic_launcher.webp"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\mipmap-xxhdpi_ic_launcher_round.webp.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\mipmap-xxhdpi\\ic_launcher_round.webp"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\xml_backup_rules.xml.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\xml\\backup_rules.xml"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\drawable_ic_launcher_background.xml.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\drawable\\ic_launcher_background.xml"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\mipmap-xhdpi_ic_launcher.webp.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\mipmap-xhdpi\\ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.lovecareapp_register.app-debug-36:/drawable_bg_upload_photo_placeholder.xml.flat",
+        "source": "com.example.lovecareapp_register.app-main-38:/drawable/bg_upload_photo_placeholder.xml"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\drawable_ic_launcher_foreground.xml.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\drawable\\ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\mipmap-mdpi_ic_launcher.webp.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\mipmap-mdpi\\ic_launcher.webp"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\drawable_edittext_bg.xml.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\drawable\\edittext_bg.xml"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\xml_data_extraction_rules.xml.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\xml\\data_extraction_rules.xml"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\drawable_button_bg.xml.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\drawable\\button_bg.xml"
+    },
+    {
+        "merged": "com.example.lovecareapp_register.app-debug-36:/layout_item_onboarding_photo.xml.flat",
+        "source": "com.example.lovecareapp_register.app-main-38:/layout/item_onboarding_photo.xml"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\mipmap-xxxhdpi_ic_launcher.webp.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\mipmap-xxxhdpi\\ic_launcher.webp"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\mipmap-xxhdpi_ic_launcher.webp.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\mipmap-xxhdpi\\ic_launcher.webp"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\mipmap-anydpi-v26\\ic_launcher_round.xml"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\layout_activity_main.xml.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\layout\\activity_main.xml"
+    },
+    {
+        "merged": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-debug-36:\\mipmap-hdpi_ic_launcher_round.webp.flat",
+        "source": "C:\\Users\\liyan\\.gradle\\daemon\\9.2.1\\com.example.lovecareapp_register.app-main-38:\\mipmap-hdpi\\ic_launcher_round.webp"
+    }
+]

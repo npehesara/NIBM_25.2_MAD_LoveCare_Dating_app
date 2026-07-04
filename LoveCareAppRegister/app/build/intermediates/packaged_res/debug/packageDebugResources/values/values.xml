@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="pink_gradient_end">#E91E63</color>
+    <color name="pink_gradient_start">#FF4081</color>
+    <color name="text_dark_title">#222222</color>
+    <color name="text_grey_subtitle">#666666</color>
+    <color name="white">#FFFFFFFF</color>
+    <string name="already_have_an_account">Already have an account? </string>
+    <string name="app_name">LoveCareApp-Register</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="confirm_password_hint">Re-enter your password</string>
+    <string name="connected">CONNECTED</string>
+    <string name="create_account">Create Account</string>
+    <string name="dating_mobile_app">DATING MOBILE APP</string>
+    <string name="email_hint">Enter your email or phone</string>
+    <string name="email_or_phone">Email or Phone</string>
+    <string name="full_name">Full Name</string>
+    <string name="join_us_to_find_your_perfect_match">Join us to find your perfect match</string>
+    <string name="name_hint">Enter your full name</string>
+    <string name="password">Password</string>
+    <string name="password_hint">Enter your password</string>
+    <string name="register">Register</string>
+    <string name="show_password">Show Password</string>
+    <string name="sign_in">Sign In</string>
+    <style name="Base.Theme.LoveCareAppRegister" parent="Theme.Material3.DayNight.NoActionBar">
+        
+        
+    </style>
+    <style name="Theme.LoveCareAppRegister" parent="Base.Theme.LoveCareAppRegister"/>
+</resources>
