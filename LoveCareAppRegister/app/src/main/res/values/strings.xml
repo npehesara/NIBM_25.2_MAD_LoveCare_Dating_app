@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">LoveCareApp-Register</string>
+
+    <string name="connected">CONNECTED</string>
+    <string name="dating_mobile_app">DATING MOBILE APP</string>
+
+    <string name="create_account">Create Account</string>
+    <string name="join_us_to_find_your_perfect_match">Join us to find your perfect match</string>
+    <string name="full_name">Full Name</string>
+    <string name="name_hint">Enter your full name</string>
+    <string name="email_or_phone">Email or Phone</string>
+    <string name="email_hint">Enter your email or phone</string>
+    <string name="password">Password</string>
+    <string name="password_hint">Enter your password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="confirm_password_hint">Re-enter your password</string>
+    <string name="show_password">Show Password</string>
+    <string name="register">Register</string>
+    <string name="already_have_an_account">Already have an account? </string>
+    <string name="sign_in">Sign In</string>
+</resources>
