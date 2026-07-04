@@ -12,25 +12,36 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Lovecare">
 
-        <!-- Login exists but does not open first for now -->
+        <activity
+            android:name=".NavigationBar"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".Achievement"
+            android:exported="false" />
+
+        <activity
+            android:name=".Gallery"
+            android:exported="false" />
+
+        <activity
+            android:name=".LoveSpaceMessage"
+            android:exported="false" />
+
         <activity
             android:name=".Login"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- LoveSpace opens first when you press Run -->
         <activity
             android:name=".LoveSpaceActivity"
-            android:exported="true">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-        </activity>
+            android:exported="false" />
 
     </application>
 
 </manifest>
-

@@ -23,7 +23,10 @@
     <string name="apple">Apple</string>
 
     <!-- LoveSpace Dashboard -->
-    <string name="lovespace_title">LOVESPACE</string>
-    <string name="relationship_progress">RELATIONSHIP PROGRESS</string>
-    <string name="add_achievement_btn">ACHIEVEMENTS &amp; REWARDS 🎯</string>
+    <string name="lovespace_title">LoveSpace</string>
+    <string name="level">LEVEL 01</string>
+    <string name="xp_ratio">850 / 1000 XP</string>
+    <string name="desc_gallery">Our Memories</string>
+    <string name="desc_message">Sweet Nothings</string>
+    <string name="desc_achievement">Our Milestones</string>
 </resources>

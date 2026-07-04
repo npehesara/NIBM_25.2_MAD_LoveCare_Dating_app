@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.Lovecare" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">#FF2E93</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
+        <!-- Modern Midnight Romantic Palette -->
+        <item name="colorPrimary">#FF4D6D</item>
+        <item name="colorSecondary">#7B61FF</item>
+        <item name="android:navigationBarColor">#0A0714</item>
+        <item name="android:statusBarColor">#0A0714</item>
+        <item name="android:windowBackground">#0A0714</item>
     </style>
 
     <!-- Style for Circular Images -->
@@ -11,10 +14,29 @@
         <item name="cornerSize">50%</item>
     </style>
 
-    <!-- Basic styling for Calendar -->
+    <!-- Ultra-Modern Bold Calendar Theme -->
     <style name="CustomCalendarTheme" parent="Theme.AppCompat">
-        <item name="android:textColorPrimary">#FFFFFF</item>
-        <item name="android:colorControlActivated">#FF2E93</item>
-        <item name="android:textColorSecondary">#9E9E9E</item>
+        <item name="android:calendarViewStyle">@style/MyCalendarViewStyle</item>
+    </style>
+
+    <style name="MyCalendarViewStyle" parent="android:Widget.CalendarView">
+        <item name="android:focusedMonthDateColor">#FFFFFF</item>
+        <item name="android:unfocusedMonthDateColor">#4DFFFFFF</item>
+        <item name="android:weekSeparatorLineColor">#00000000</item>
+        <item name="android:showWeekNumber">false</item>
+        <item name="android:dateTextAppearance">@style/CalendarDateText</item>
+        <item name="android:weekDayTextAppearance">@style/CalendarWeekDayText</item>
+    </style>
+
+    <style name="CalendarDateText">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="CalendarWeekDayText">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#FF758F</item>
+        <item name="android:textStyle">bold</item>
     </style>
 </resources>

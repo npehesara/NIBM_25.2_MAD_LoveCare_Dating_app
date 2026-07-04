@@ -85,7 +85,7 @@
             android:layout_marginTop="6dp"
             android:autofillHints="emailAddress"
             android:background="@drawable/edittext_bg"
-            android:drawableStart="@android:drawable/ic_menu_search"
+            android:drawableStart="@drawable/ic_search"
             android:drawablePadding="14dp"
             android:hint="@string/email_hint"
             android:inputType="textEmailAddress"
@@ -114,7 +114,7 @@
                 android:layout_height="match_parent"
                 android:autofillHints="password"
                 android:background="@drawable/edittext_bg"
-                android:drawableStart="@android:drawable/ic_lock_idle_lock"
+                android:drawableStart="@drawable/ic_lock"
                 android:drawablePadding="14dp"
                 android:hint="@string/password_hint"
                 android:inputType="textPassword"
@@ -131,7 +131,7 @@
                 android:layout_centerVertical="true"
                 android:layout_marginEnd="16dp"
                 android:contentDescription="@string/show_password"
-                android:src="@android:drawable/ic_menu_view"
+                android:src="@drawable/ic_visibility"
                 app:tint="#80000000" />
         </RelativeLayout>
 
