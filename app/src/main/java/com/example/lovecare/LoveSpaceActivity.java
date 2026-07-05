@@ -40,7 +40,7 @@ public class LoveSpaceActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_love_space);
 
-        // Handle Window Insets
+
         View root = findViewById(R.id.loveSpaceRoot);
         if (root != null) {
             ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
@@ -50,28 +50,28 @@ public class LoveSpaceActivity extends AppCompatActivity {
             });
         }
 
-        // Initialize Views
+
         calendarContextMenuCard = findViewById(R.id.calendarContextMenuCard);
         calendarMenuDim = findViewById(R.id.calendarMenuDim);
         emojiSelectorCard = findViewById(R.id.emojiSelectorCard);
         tvUserEmojiOverlay = findViewById(R.id.tvUserEmojiOverlay);
 
-        // 1. Calendar Interaction
+
         setupCalendarInteraction();
 
-        // 2. User & Partner Profile Interaction
+
         View userProfileContainer = findViewById(R.id.userProfileContainer);
         setupUserLongPress(userProfileContainer);
         setupEmojiSelection();
 
-        // Partner emoji (static display)
+
         TextView tvPartnerEmojiOverlay = findViewById(R.id.tvPartnerEmojiOverlay);
         if (tvPartnerEmojiOverlay != null) {
             tvPartnerEmojiOverlay.setText("💖");
             tvPartnerEmojiOverlay.setVisibility(View.VISIBLE);
         }
 
-        // Action Icons
+
         findViewById(R.id.btnGallery).setOnClickListener(v -> {
             Intent intent = new Intent(LoveSpaceActivity.this, Gallery.class);
             startActivity(intent);
@@ -94,12 +94,12 @@ public class LoveSpaceActivity extends AppCompatActivity {
         CalendarView calendarView = findViewById(R.id.calendarView);
         if (calendarView == null) return;
 
-        // Initialize with today's date
+
         Calendar c = Calendar.getInstance();
         selectedCalendarDate = String.format(Locale.getDefault(), "%02d/%02d/%d",
                 c.get(Calendar.DAY_OF_MONTH), (c.get(Calendar.MONTH) + 1), c.get(Calendar.YEAR));
 
-        // Single tap selects/highlights the date (internal behavior of CalendarView)
+
         calendarView.setOnDateChangeListener((view, year, month, dayOfMonth) -> {
             selectedCalendarDate = String.format(Locale.getDefault(), "%02d/%02d/%d", dayOfMonth, (month + 1), year);
             // Ensure contextual menu is closed if a new date is picked
@@ -108,7 +108,7 @@ public class LoveSpaceActivity extends AppCompatActivity {
             }
         });
 
-        // Robust long-press detection using a Handler on the touch listener
+
         calendarView.setOnTouchListener(new View.OnTouchListener() {
             private final Runnable longPressRunnable = () -> showCalendarContextMenu();
             private float startX, startY;
@@ -123,7 +123,7 @@ public class LoveSpaceActivity extends AppCompatActivity {
                         longPressHandler.postDelayed(longPressRunnable, CALENDAR_HOLD_THRESHOLD);
                         break;
                     case MotionEvent.ACTION_MOVE:
-                        // Cancel hold if finger moves too much (slop)
+
                         if (Math.abs(event.getX() - startX) > 30 || Math.abs(event.getY() - startY) > 30) {
                             longPressHandler.removeCallbacks(longPressRunnable);
                         }
@@ -133,7 +133,7 @@ public class LoveSpaceActivity extends AppCompatActivity {
                         longPressHandler.removeCallbacks(longPressRunnable);
                         break;
                 }
-                // Return false to allow CalendarView to handle its internal selection/highlighting logic
+
                 return false;
             }
         });
@@ -142,17 +142,17 @@ public class LoveSpaceActivity extends AppCompatActivity {
     private void showCalendarContextMenu() {
         if (calendarContextMenuCard == null) return;
 
-        // Feedback
+
         calendarContextMenuCard.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
 
-        // Show dimmed background
+
         if (calendarMenuDim != null) {
             calendarMenuDim.setVisibility(View.VISIBLE);
             calendarMenuDim.setAlpha(0f);
             calendarMenuDim.animate().alpha(1f).setDuration(250).start();
         }
 
-        // Show centered menu with "pop-up" animation
+
         calendarContextMenuCard.setVisibility(View.VISIBLE);
         calendarContextMenuCard.setAlpha(0f);
         calendarContextMenuCard.setScaleX(0.8f);
@@ -199,7 +199,7 @@ public class LoveSpaceActivity extends AppCompatActivity {
             Toast.makeText(this, "Adding note for " + selectedCalendarDate, Toast.LENGTH_SHORT).show();
         });
 
-        // Close menu if clicking the dimmed background (outside the card)
+
         if (calendarMenuDim != null) {
             calendarMenuDim.setOnClickListener(v -> hideCalendarContextMenu());
         }

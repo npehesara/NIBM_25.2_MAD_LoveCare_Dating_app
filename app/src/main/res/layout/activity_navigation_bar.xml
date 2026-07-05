@@ -5,70 +5,174 @@
     android:id="@+id/navRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0714"
+    android:background="#000000"
     tools:context=".NavigationBar">
 
-    <!-- Content Area -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Home Screen"
-        android:textColor="#FFFFFF"
-        android:textSize="24sp"
-        app:layout_constraintBottom_toTopOf="@+id/bottomNav"
+    <!-- Profile Background Image -->
+    <ImageView
+        android:id="@+id/ivProfileImage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/loginbg"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Bottom Navigation Bar -->
-    <LinearLayout
-        android:id="@+id/bottomNav"
+    <View
         android:layout_width="match_parent"
-        android:layout_height="70dp"
-        android:background="#1F1B2E"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toBottomOf="parent">
+        android:layout_height="450dp"
+        android:background="@drawable/gradient_bottom_overlay"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
-        <ImageButton
-            android:id="@+id/btnHomeNav"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Home"
-            android:src="@drawable/ic_home"
-            app:tint="#FF4D6D" />
+    <LinearLayout
+        android:id="@+id/llProfileInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp"
+        app:layout_constraintBottom_toTopOf="@+id/llActionButtons">
 
-        <ImageButton
-            android:id="@+id/btnLoveSpaceNav"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Love Space"
-            android:src="@drawable/ic_star"
-            app:tint="#FF4D6D" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/badge_bg"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
+            android:text="Recently active"
+            android:textColor="#027A48"
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
-        <ImageButton
-            android:id="@+id/btnMessageNav"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Message"
-            android:src="@drawable/ic_chat"
-            app:tint="#FF4D6D" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <ImageButton
-            android:id="@+id/btnProfileNav"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Profile"
-            android:src="@drawable/ic_profile"
-            app:tint="#FF4D6D" />
+            <TextView
+                android:id="@+id/tvNameAge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Navoda 24"
+                android:textColor="#FFFFFF"
+                android:textSize="32sp"
+                android:textStyle="bold" />
 
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/ic_verified"
+                app:tint="#2DB4FF" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvBio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="First of all, I was not born female. I was born male. I identify myself as trans non-binary I haven’t done any surgeries to my body or taking hormones, but naturally, I have a feminine body..."
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp" />
     </LinearLayout>
+
+    <!-- CENTER HEART EFFECT VIEW -->
+    <ImageView
+        android:id="@+id/ivHeartEffect"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:alpha="0"
+        android:src="@drawable/ic_heart"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="#24E38E" />
+
+    <LinearLayout
+        android:id="@+id/llActionButtons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingBottom="24dp"
+        app:layout_constraintBottom_toTopOf="@+id/bottomNavigation">
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnUndo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:src="@drawable/ic_back"
+            app:backgroundTint="#80000000"
+            app:fabCustomSize="50dp"
+            app:tint="@color/swipe_undo"
+            app:elevation="0dp"
+            app:borderWidth="0dp"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnDislike"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            app:backgroundTint="#80000000"
+            app:fabCustomSize="60dp"
+            app:tint="@color/swipe_dislike"
+            app:elevation="0dp"
+            app:borderWidth="0dp"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnSuperLike"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:src="@drawable/ic_star"
+            app:backgroundTint="#80000000"
+            app:fabCustomSize="50dp"
+            app:tint="@color/swipe_superlike"
+            app:elevation="0dp"
+            app:borderWidth="0dp"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnLike"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:src="@drawable/ic_heart"
+            app:backgroundTint="#80000000"
+            app:fabCustomSize="60dp"
+            app:tint="@color/swipe_like"
+            app:elevation="0dp"
+            app:borderWidth="0dp"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnBoost"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:src="@drawable/ic_send"
+            app:backgroundTint="#80000000"
+            app:fabCustomSize="50dp"
+            app:tint="@color/swipe_boost"
+            app:elevation="0dp"
+            app:borderWidth="0dp"/>
+    </LinearLayout>
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#0F0F0F"
+        app:itemIconTint="@color/nav_item_color"
+        app:itemTextColor="@color/nav_item_color"
+        app:labelVisibilityMode="labeled"
+        app:menu="@menu/bottom_nav_menu"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

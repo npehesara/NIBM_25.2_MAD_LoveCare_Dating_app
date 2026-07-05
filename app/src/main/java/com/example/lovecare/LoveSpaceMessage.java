@@ -26,7 +26,7 @@ public class LoveSpaceMessage extends AppCompatActivity {
             });
         }
 
-        // Setup back button
+
         View btnBack = findViewById(R.id.btnChatBack);
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> finish());

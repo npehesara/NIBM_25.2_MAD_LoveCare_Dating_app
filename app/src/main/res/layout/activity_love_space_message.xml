@@ -8,7 +8,6 @@
     android:background="#0A0714"
     tools:context=".LoveSpaceMessage">
 
-    <!-- Header / Toolbar -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/chatHeader"
         android:layout_width="match_parent"
@@ -82,7 +81,6 @@
 
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Bottom Input Bar -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/chatInputLayout"
         android:layout_width="match_parent"

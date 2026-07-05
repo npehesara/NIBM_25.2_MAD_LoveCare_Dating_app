@@ -8,7 +8,6 @@
     android:background="#0A0714"
     tools:context=".Gallery">
 
-    <!-- Header / Toolbar -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/galleryHeader"
         android:layout_width="match_parent"

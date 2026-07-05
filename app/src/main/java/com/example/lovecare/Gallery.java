@@ -26,7 +26,7 @@ public class Gallery extends AppCompatActivity {
             });
         }
 
-        // Setup back button
+
         View btnBack = findViewById(R.id.btnGalleryBack);
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> finish());

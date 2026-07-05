@@ -1,42 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.Lovecare" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Modern Midnight Romantic Palette -->
-        <item name="colorPrimary">#FF4D6D</item>
-        <item name="colorSecondary">#7B61FF</item>
-        <item name="android:navigationBarColor">#0A0714</item>
-        <item name="android:statusBarColor">#0A0714</item>
-        <item name="android:windowBackground">#0A0714</item>
+        <!-- Primary brand color -->
+        <item name="colorPrimary">#FF2E93</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+
+        <!-- Material 3 Navigation Bar "Pill" color -->
+        <!-- colorSecondaryContainer is used for the active indicator background -->
+        <item name="colorSecondaryContainer">#FFFFFF</item>
+        <!-- colorOnSecondaryContainer is used for the icon/text color when active -->
+        <item name="colorOnSecondaryContainer">#000000</item>
+
+        <!-- Navigation bar system background color -->
+        <item name="android:navigationBarColor">#0F0F0F</item>
+
+        <!-- Ensure BottomNavigationView uses Material 3 style -->
+        <item name="bottomNavigationStyle">@style/Widget.Material3.BottomNavigationView</item>
     </style>
 
     <!-- Style for Circular Images -->
-    <style name="CircleImage">
+    <style name="CircleImage" parent="">
+        <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
 
-    <!-- Ultra-Modern Bold Calendar Theme -->
+    <!-- Custom Calendar Theme -->
     <style name="CustomCalendarTheme" parent="Theme.AppCompat">
-        <item name="android:calendarViewStyle">@style/MyCalendarViewStyle</item>
-    </style>
-
-    <style name="MyCalendarViewStyle" parent="android:Widget.CalendarView">
-        <item name="android:focusedMonthDateColor">#FFFFFF</item>
-        <item name="android:unfocusedMonthDateColor">#4DFFFFFF</item>
-        <item name="android:weekSeparatorLineColor">#00000000</item>
-        <item name="android:showWeekNumber">false</item>
-        <item name="android:dateTextAppearance">@style/CalendarDateText</item>
-        <item name="android:weekDayTextAppearance">@style/CalendarWeekDayText</item>
-    </style>
-
-    <style name="CalendarDateText">
-        <item name="android:textSize">18sp</item>
-        <item name="android:textColor">#FFFFFF</item>
-        <item name="android:textStyle">bold</item>
-    </style>
-
-    <style name="CalendarWeekDayText">
-        <item name="android:textSize">14sp</item>
-        <item name="android:textColor">#FF758F</item>
-        <item name="android:textStyle">bold</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:colorControlActivated">#FF2E93</item>
+        <item name="android:textColorSecondary">#9E9E9E</item>
     </style>
 </resources>

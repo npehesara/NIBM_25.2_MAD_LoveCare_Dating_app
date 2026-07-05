@@ -9,7 +9,6 @@
     android:background="#0A0714"
     tools:context=".LoveSpaceActivity">
 
-    <!-- ROMANTIC NEON HEADER -->
     <TextView
         android:id="@+id/tvHeaderTitle"
         android:layout_width="wrap_content"
@@ -27,7 +26,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- MODERN XP & LEVEL SECTION -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/xpCard"
         android:layout_width="0dp"
@@ -91,7 +89,6 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- CENTER PROFILE VISUAL -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/coupleVisualContainer"
         android:layout_width="match_parent"
@@ -108,7 +105,6 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- User Profile (Left) -->
         <FrameLayout
             android:id="@+id/userProfileContainer"
             android:layout_width="120dp"
@@ -161,7 +157,6 @@
             app:layout_constraintStart_toEndOf="@+id/userProfileContainer"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Partner Profile (Right) -->
         <FrameLayout
             android:id="@+id/partnerProfileContainer"
             android:layout_width="120dp"
@@ -196,7 +191,6 @@
         </FrameLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- BOLD CALENDAR CARD -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/calendarCard"
         android:layout_width="0dp"
@@ -221,7 +215,6 @@
             android:theme="@style/CustomCalendarTheme" />
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- MODERN NAVIGATION BAR -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/bottomNavContainer"
         android:layout_width="match_parent"
@@ -279,7 +272,6 @@
             app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- MOOD SELECTOR CARD -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/emojiSelectorCard"
         android:layout_width="wrap_content"
@@ -307,7 +299,6 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- BACKGROUND DIM FOR CALENDAR MENU -->
     <View
         android:id="@+id/calendarMenuDim"
         android:layout_width="match_parent"
@@ -320,7 +311,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- CALENDAR CONTEXT MENU CARD (Centered) -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/calendarContextMenuCard"
         android:layout_width="280dp"
