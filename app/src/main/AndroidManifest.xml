@@ -48,6 +48,10 @@
             android:name=".LoveSpaceMessage"
             android:exported="false" />
         <activity
+            android:name=".UserChatActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".NavigationBar"
             android:exported="false" />
     </application>
