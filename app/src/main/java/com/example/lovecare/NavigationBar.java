@@ -62,7 +62,7 @@ public class NavigationBar extends AppCompatActivity {
                 } else if (itemId == R.id.nav_likes) {
                     intent = new Intent(this, LoveSpaceActivity.class);
                 } else if (itemId == R.id.nav_chat) {
-                    intent = new Intent(this, Gallery.class);
+                    intent = new Intent(this, UserChatActivity.class);
                 } else if (itemId == R.id.nav_profile) {
                     intent = new Intent(this, Profile.class);
                 }
