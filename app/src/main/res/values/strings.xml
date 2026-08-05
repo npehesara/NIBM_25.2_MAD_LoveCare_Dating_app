@@ -1,0 +1,58 @@
+<resources>
+    <string name="app_name">Admin Dashboard</string>
+    <string name="dashboard_title">Love Care Admin Dashboard</string>
+
+    <!-- Home Fragment -->
+    <string name="welcome_admin">Welcome Admin 👋</string>
+    <string name="home_subtitle">Love Care Admin Dashboard</string>
+    <string name="total_users_label">Total Users</string>
+    <string name="analytics_label">Analytics</string>
+    <string name="couple_matches_label">Couple Matches</string>
+    <string name="zero">0</string>
+    <string name="total_users_count">24,512</string>
+    <string name="couple_matches_count">8,920</string>
+    <string name="last_7_days">Last 7 Days</string>
+    <string name="mon">Mon</string>
+    <string name="tue">Tue</string>
+    <string name="wed">Wed</string>
+    <string name="thu">Thu</string>
+    <string name="fri">Fri</string>
+    <string name="sat">Sat</string>
+    <string name="sun">Sun</string>
+
+    <!-- Reported Users Fragment -->
+    <string name="reported_users_title">Reported Users</string>
+    <string name="reported_users_subtitle">List of users who have been reported.</string>
+    <string name="no_reported_users">No reported users yet.</string>
+    <string name="reported_users_empty_desc">Reported users will appear here.</string>
+
+    <!-- User Management Fragment -->
+    <string name="user_management_title">User Management</string>
+    <string name="user_management_subtitle">Manage and oversee all registered users.</string>
+    <string name="no_users_found">No users found.</string>
+    <string name="user_management_empty_desc">All registered users will appear here.</string>
+    <string name="search_users_hint">Search users by name or email&#8230;</string>
+
+    <!-- Add Events Fragment -->
+    <string name="add_events_title">Add Events</string>
+    <string name="add_events_subtitle">Create and manage upcoming events.</string>
+    <string name="no_events_found">No events found.</string>
+    <string name="add_events_empty_desc">Events will appear here.</string>
+    <string name="add_event_fab_desc">Add Event</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_reported">Reported Users</string>
+    <string name="nav_management">User Management</string>
+    <string name="nav_events">Add Events</string>
+
+    <string name="logout">Logout</string>
+    <string name="weekly_view">Weekly View</string>
+    <string name="day_m">M</string>
+    <string name="day_t">T</string>
+    <string name="day_w">W</string>
+    <string name="day_th">T</string>
+    <string name="day_f">F</string>
+    <string name="day_s">S</string>
+    <string name="day_su">S</string>
+</resources>
