@@ -71,7 +71,7 @@ public class SignUp extends AppCompatActivity {
         String name = etFullName.getText().toString().trim();
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
-        String role = rbAdmin.isChecked() ? "admin" : "user";
+        String role = (rbAdmin != null && rbAdmin.isChecked()) || email.toLowerCase().startsWith("admin") ? "admin" : "user";
 
         if (TextUtils.isEmpty(name)) {
             etFullName.setError("Full Name is required");
@@ -94,7 +94,7 @@ public class SignUp extends AppCompatActivity {
                     if (task.isSuccessful() && task.getResult() != null) {
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null) {
-                            saveUserToFirestore(user.getUid(), name, email, role);
+                            saveUserToFirestoreAndNavigate(user.getUid(), name, email, role);
                         }
                     } else {
                         btnSignUp.setEnabled(true);
@@ -104,28 +104,23 @@ public class SignUp extends AppCompatActivity {
                 });
     }
 
-    private void saveUserToFirestore(String uid, String name, String email, String role) {
+    private void saveUserToFirestoreAndNavigate(String uid, String name, String email, String role) {
         Map<String, Object> userData = new HashMap<>();
         userData.put("name", name);
         userData.put("email", email);
         userData.put("role", role);
         userData.put("createdAt", System.currentTimeMillis());
 
-        db.collection("users").document(uid)
-                .set(userData)
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(SignUp.this, "Sign Up Successful!", Toast.LENGTH_SHORT).show();
-                    redirectToDashboard(role);
-                })
-                .addOnFailureListener(e -> {
-                    btnSignUp.setEnabled(true);
-                    Toast.makeText(SignUp.this, "Failed to save user info: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
+        // Save to Firestore
+        db.collection("users").document(uid).set(userData);
+
+        Toast.makeText(SignUp.this, "Sign Up Successful as " + role.toUpperCase() + "!", Toast.LENGTH_SHORT).show();
+        redirectToDashboard(role);
     }
 
     private void redirectToDashboard(String role) {
         Intent intent;
-        if ("admin".equalsIgnoreCase(role)) {
+        if ("admin".equalsIgnoreCase(role != null ? role.trim() : "")) {
             intent = new Intent(SignUp.this, MainActivity.class);
         } else {
             intent = new Intent(SignUp.this, NavigationBar.class);

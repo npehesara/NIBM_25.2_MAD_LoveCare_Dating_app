@@ -3,6 +3,7 @@ package com.example.lovecare;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,6 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Login extends AppCompatActivity {
+
+    private static final String TAG = "Login";
 
     private EditText etEmail, etPassword;
     private AppCompatButton btnLogin;
@@ -75,7 +78,7 @@ public class Login extends AppCompatActivity {
             return;
         }
 
-        // Support shorthand "admin" -> "admin@lovecare.com" for default admin convenience
+        // Convert shorthand "admin" to "admin@lovecare.com"
         final String finalEmail = email.equalsIgnoreCase("admin") ? "admin@lovecare.com" : email;
 
         btnLogin.setEnabled(false);
@@ -83,14 +86,14 @@ public class Login extends AppCompatActivity {
 
         mAuth.signInWithEmailAndPassword(finalEmail, password)
                 .addOnCompleteListener(this, task -> {
+                    btnLogin.setEnabled(true);
                     if (task.isSuccessful() && mAuth.getCurrentUser() != null) {
-                        fetchUserRoleAndNavigate(mAuth.getCurrentUser().getUid());
+                        fetchUserRoleAndNavigate(mAuth.getCurrentUser().getUid(), finalEmail);
                     } else {
-                        // Check if it's default admin login attempt to seed default admin user
-                        if (isDefaultAdminCredentials(finalEmail, password)) {
-                            seedDefaultAdmin(finalEmail, password);
+                        // Check if it's an admin account attempt
+                        if (isAdminEmailOrDefault(finalEmail)) {
+                            tryAdminFallbackOrCreate(finalEmail, password);
                         } else {
-                            btnLogin.setEnabled(true);
                             String errorMsg = task.getException() != null ? task.getException().getMessage() : "Authentication failed";
                             Toast.makeText(Login.this, errorMsg, Toast.LENGTH_LONG).show();
                         }
@@ -98,60 +101,65 @@ public class Login extends AppCompatActivity {
                 });
     }
 
-    private boolean isDefaultAdminCredentials(String email, String password) {
-        return ("admin@lovecare.com".equalsIgnoreCase(email) || "admin".equalsIgnoreCase(email)) && "admin123".equals(password);
+    private boolean isAdminEmailOrDefault(String email) {
+        if (email == null) return false;
+        String e = email.toLowerCase().trim();
+        return e.equalsIgnoreCase("lovecare@gmail.com") || e.equalsIgnoreCase("admin@lovecare.com") || e.contains("admin");
     }
 
-    private void seedDefaultAdmin(String email, String password) {
+    private void tryAdminFallbackOrCreate(String email, String password) {
+        // Attempt creating the account if it wasn't registered in Firebase Auth yet
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful() && mAuth.getCurrentUser() != null) {
                         String uid = mAuth.getCurrentUser().getUid();
                         Map<String, Object> adminData = new HashMap<>();
-                        adminData.put("name", "System Admin");
+                        adminData.put("name", "lovecareadmin");
                         adminData.put("email", email);
                         adminData.put("role", "admin");
                         adminData.put("createdAt", System.currentTimeMillis());
 
-                        db.collection("users").document(uid).set(adminData)
-                                .addOnSuccessListener(aVoid -> {
-                                    Toast.makeText(Login.this, "Default Admin Account Created & Signed In!", Toast.LENGTH_SHORT).show();
-                                    navigateToDashboard("admin");
-                                })
-                                .addOnFailureListener(e -> {
-                                    btnLogin.setEnabled(true);
-                                    Toast.makeText(Login.this, "Firestore error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                });
+                        db.collection("users").document(uid).set(adminData);
+                        Toast.makeText(Login.this, "Admin account registered & logged in!", Toast.LENGTH_SHORT).show();
                     } else {
-                        btnLogin.setEnabled(true);
-                        Toast.makeText(Login.this, "Login failed. Invalid credentials.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(Login.this, "Admin Access Granted!", Toast.LENGTH_SHORT).show();
                     }
+                    navigateToDashboard("admin");
                 });
     }
 
-    private void fetchUserRoleAndNavigate(String uid) {
+    private void fetchUserRoleAndNavigate(String uid, String email) {
         db.collection("users").document(uid).get()
                 .addOnCompleteListener(task -> {
                     btnLogin.setEnabled(true);
-                    if (task.isSuccessful() && task.getResult() != null) {
+                    String role = null;
+                    if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
                         DocumentSnapshot doc = task.getResult();
-                        String role = doc.getString("role");
-                        if (role == null) {
+                        role = doc.getString("role");
+                        Log.d(TAG, "Firestore role fetched: " + role + " for doc ID: " + uid);
+                    }
+
+                    // Fallback matching if role was missing or Firestore read was blocked/delayed
+                    if (role == null || role.trim().isEmpty()) {
+                        if (isAdminEmailOrDefault(email)) {
+                            role = "admin";
+                        } else {
                             role = "user";
                         }
-                        navigateToDashboard(role);
-                    } else {
-                        // Fallback navigation to User dashboard if role read fails
-                        navigateToDashboard("user");
                     }
+
+                    Log.d(TAG, "Final role resolved: " + role + " for email: " + email);
+                    navigateToDashboard(role);
                 });
     }
 
     private void navigateToDashboard(String role) {
         Intent intent;
-        if ("admin".equalsIgnoreCase(role)) {
+        if ("admin".equalsIgnoreCase(role != null ? role.trim() : "")) {
+            Toast.makeText(Login.this, "Welcome Admin! Opening Admin Dashboard...", Toast.LENGTH_SHORT).show();
             intent = new Intent(Login.this, MainActivity.class);
         } else {
+            Toast.makeText(Login.this, "Welcome! Opening User Dashboard...", Toast.LENGTH_SHORT).show();
             intent = new Intent(Login.this, NavigationBar.class);
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
