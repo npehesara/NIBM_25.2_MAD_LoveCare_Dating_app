@@ -8,10 +8,24 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Custom Colors -->
+    <!-- Admin Dashboard Colors -->
     <color name="primary_pink">#FF4081</color>
     <color name="light_pink_bg">#FFF5F7</color>
     <color name="text_grey">#757575</color>
     <color name="dark_accent">#1A1A1A</color>
     <color name="card_bg">#FFFFFF</color>
+
+    <!-- LoveCare Colors -->
+    <color name="pink_main">#FF4D6D</color>
+    <color name="pink_light">#FFF0F2</color>
+    <color name="grey_text">#757575</color>
+
+    <!-- Swipe Action Colors -->
+    <color name="swipe_undo">#FFB000</color>
+    <color name="swipe_dislike">#FF2E63</color>
+    <color name="swipe_superlike">#2DB4FF</color>
+    <color name="swipe_like">#24E38E</color>
+    <color name="swipe_boost">#8C52FF</color>
+
+    <color name="nav_bg">#0F0F0F</color>
 </resources>

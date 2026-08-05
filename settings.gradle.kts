@@ -22,6 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AdminDashboardActivity"
+rootProject.name = "Lovecare"
 include(":app")
- 
