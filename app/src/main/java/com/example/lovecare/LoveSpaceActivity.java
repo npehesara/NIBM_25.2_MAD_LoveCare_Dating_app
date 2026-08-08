@@ -151,11 +151,6 @@ public class LoveSpaceActivity extends AppCompatActivity {
             }
         });
 
-        findViewById(R.id.btnAchievementIcon).setOnClickListener(v -> {
-            Intent intent = new Intent(LoveSpaceActivity.this, Achievement.class);
-            startActivity(intent);
-        });
-
         // Close LoveSpace button
         btnCloseLoveSpace.setOnClickListener(v -> showCloseLoveSpaceDialog());
 
