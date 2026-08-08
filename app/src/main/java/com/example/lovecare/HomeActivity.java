@@ -118,6 +118,15 @@ public class HomeActivity extends AppCompatActivity {
         // Hide profile UI while loading
         setProfileVisible(false);
 
+        View btnRefreshSwipe = findViewById(R.id.btnRefreshSwipe);
+        if (btnRefreshSwipe != null) {
+            btnRefreshSwipe.setOnClickListener(v -> {
+                v.animate().rotationBy(360f).setDuration(400).start();
+                Toast.makeText(this, "Refreshing feed...", Toast.LENGTH_SHORT).show();
+                loadSuggestedUsers();
+            });
+        }
+
         setupActionButtons();
         loadSuggestedUsers();
     }

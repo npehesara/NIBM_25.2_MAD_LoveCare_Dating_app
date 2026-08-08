@@ -156,50 +156,6 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="@string/or_log_in_with"
-            android:textColor="@color/black"
-            android:textSize="14sp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <ImageButton
-                android:id="@+id/btnFacebook"
-                android:layout_width="72dp"
-                android:layout_height="46dp"
-                android:layout_marginEnd="12dp"
-                android:background="@drawable/social_facebook_bg"
-                android:contentDescription="@string/facebook"
-                android:src="@drawable/ic_facebook" />
-
-            <ImageButton
-                android:id="@+id/btnGoogle"
-                android:layout_width="72dp"
-                android:layout_height="46dp"
-                android:layout_marginEnd="12dp"
-                android:background="@drawable/social_google_bg"
-                android:contentDescription="@string/google"
-                android:padding="10dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_google" />
-
-            <ImageButton
-                android:id="@+id/btnApple"
-                android:layout_width="72dp"
-                android:layout_height="46dp"
-                android:background="@drawable/social_apple_bg"
-                android:contentDescription="@string/apple"
-                android:src="@drawable/ic_apple" />
-        </LinearLayout>
-
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

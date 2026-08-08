@@ -20,6 +20,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -144,6 +145,7 @@ public class LoveSpaceMessage extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_love_space_message);
 
         mAuth = FirebaseAuth.getInstance();
@@ -167,7 +169,13 @@ public class LoveSpaceMessage extends AppCompatActivity {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.messageRoot), (v, insets) -> {
             Insets sb = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(sb.left, sb.top, sb.right, sb.bottom);
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            int bottomPadding = Math.max(sb.bottom, ime.bottom);
+            v.setPadding(sb.left, sb.top, sb.right, bottomPadding);
+
+            if (ime.bottom > 0 && messageAdapter != null && messageAdapter.getItemCount() > 0) {
+                rvMessages.postDelayed(() -> rvMessages.smoothScrollToPosition(messageAdapter.getItemCount() - 1), 100);
+            }
             return insets;
         });
 
@@ -197,6 +205,19 @@ public class LoveSpaceMessage extends AppCompatActivity {
 
         View btnOptions = findViewById(R.id.btnChatOptions);
         if (btnOptions != null) btnOptions.setOnClickListener(this::showChatOptionsMenu);
+
+        if (etChatMessage != null) {
+            etChatMessage.setOnClickListener(v -> scrollToBottom());
+            etChatMessage.setOnFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus) scrollToBottom();
+            });
+        }
+    }
+
+    private void scrollToBottom() {
+        if (messageAdapter != null && messageAdapter.getItemCount() > 0 && rvMessages != null) {
+            rvMessages.postDelayed(() -> rvMessages.smoothScrollToPosition(messageAdapter.getItemCount() - 1), 150);
+        }
     }
 
     // ── Wallpaper Management ───────────────────────────────────────────

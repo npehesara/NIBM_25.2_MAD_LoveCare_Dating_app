@@ -199,22 +199,11 @@
                 android:textSize="14sp"/>
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSettings"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:text="Settings"
-                android:textColor="#FFFFFF"
-                android:gravity="start|center_vertical"
-                app:icon="@android:drawable/ic_menu_preferences"
-                app:iconTint="#FFFFFF"/>
-
-            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogout"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
                 android:text="Logout"
                 android:textColor="#FF4444"
                 android:gravity="start|center_vertical"

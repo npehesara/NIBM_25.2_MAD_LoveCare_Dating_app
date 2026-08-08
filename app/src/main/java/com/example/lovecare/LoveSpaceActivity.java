@@ -151,11 +151,6 @@ public class LoveSpaceActivity extends AppCompatActivity {
             }
         });
 
-        findViewById(R.id.btnAchievementIcon).setOnClickListener(v -> {
-            Intent intent = new Intent(LoveSpaceActivity.this, Achievement.class);
-            startActivity(intent);
-        });
-
         // Close LoveSpace button
         btnCloseLoveSpace.setOnClickListener(v -> showCloseLoveSpaceDialog());
 
@@ -171,9 +166,15 @@ public class LoveSpaceActivity extends AppCompatActivity {
         if (chatRef != null && chatMessageListener != null) {
             chatRef.removeEventListener(chatMessageListener);
         }
+        if (loveSpaceListenerRegistration != null) {
+            loveSpaceListenerRegistration.remove();
+        }
     }
 
     // ── Load Active LoveSpace ─────────────────────────────────────────────────
+
+    private boolean isUser1 = false;
+    private com.google.firebase.firestore.ListenerRegistration loveSpaceListenerRegistration;
 
     private void loadActiveLoveSpace() {
         // Check where user is user1Uid
@@ -186,9 +187,11 @@ public class LoveSpaceActivity extends AppCompatActivity {
                         DocumentSnapshot doc = snap1.getDocuments().get(0);
                         activeLoveSpaceId = doc.getId();
                         partnerUid = doc.getString("user2Uid");
+                        isUser1 = true;
                         showActiveLoveSpace();
                         loadPartnerProfile();
                         setupRealtimeXpAndStreak();
+                        setupRealtimeLoveSpaceListener();
                         return;
                     }
                     // Check where user is user2Uid
@@ -201,9 +204,11 @@ public class LoveSpaceActivity extends AppCompatActivity {
                                     DocumentSnapshot doc = snap2.getDocuments().get(0);
                                     activeLoveSpaceId = doc.getId();
                                     partnerUid = doc.getString("user1Uid");
+                                    isUser1 = false;
                                     showActiveLoveSpace();
                                     loadPartnerProfile();
                                     setupRealtimeXpAndStreak();
+                                    setupRealtimeLoveSpaceListener();
                                 } else {
                                     showEmptyState();
                                 }
@@ -211,6 +216,39 @@ public class LoveSpaceActivity extends AppCompatActivity {
                             .addOnFailureListener(e -> showEmptyState());
                 })
                 .addOnFailureListener(e -> showEmptyState());
+    }
+
+    private void setupRealtimeLoveSpaceListener() {
+        if (activeLoveSpaceId == null || activeLoveSpaceId.isEmpty()) return;
+
+        if (loveSpaceListenerRegistration != null) {
+            loveSpaceListenerRegistration.remove();
+        }
+
+        loveSpaceListenerRegistration = db.collection("lovespaces")
+                .document(activeLoveSpaceId)
+                .addSnapshotListener((snapshot, error) -> {
+                    if (error != null || snapshot == null || !snapshot.exists()) return;
+
+                    String myMood = isUser1 ? snapshot.getString("user1Mood") : snapshot.getString("user2Mood");
+                    String partnerMood = isUser1 ? snapshot.getString("user2Mood") : snapshot.getString("user1Mood");
+
+                    TextView tvPartnerEmojiOverlay = findViewById(R.id.tvPartnerEmojiOverlay);
+
+                    if (tvUserEmojiOverlay != null) {
+                        if (myMood != null && !myMood.isEmpty()) {
+                            tvUserEmojiOverlay.setText(myMood);
+                            tvUserEmojiOverlay.setVisibility(View.VISIBLE);
+                        }
+                    }
+
+                    if (tvPartnerEmojiOverlay != null) {
+                        if (partnerMood != null && !partnerMood.isEmpty()) {
+                            tvPartnerEmojiOverlay.setText(partnerMood);
+                            tvPartnerEmojiOverlay.setVisibility(View.VISIBLE);
+                        }
+                    }
+                });
     }
 
     // ── Realtime Message Count & XP / Level Streak ───────────────────────────
@@ -614,6 +652,15 @@ public class LoveSpaceActivity extends AppCompatActivity {
                                     emojiSelectorCard.setScaleX(1f);
                                     emojiSelectorCard.setScaleY(1f);
                                 }).start();
+                    }
+
+                    // Save mood emoji to active LoveSpace in Firestore
+                    if (activeLoveSpaceId != null && !activeLoveSpaceId.isEmpty()) {
+                        String moodField = isUser1 ? "user1Mood" : "user2Mood";
+                        db.collection("lovespaces").document(activeLoveSpaceId)
+                                .update(moodField, selectedEmoji)
+                                .addOnSuccessListener(aVoid ->
+                                        Toast.makeText(this, "Mood updated! " + selectedEmoji, Toast.LENGTH_SHORT).show());
                     }
                 });
             }
