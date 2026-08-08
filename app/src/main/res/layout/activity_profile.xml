@@ -46,6 +46,7 @@
                     app:strokeWidth="2dp"/>
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/fabEditPhoto"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="bottom|end"
@@ -164,6 +165,7 @@
                 android:layout_marginTop="32dp"/>
 
             <TextView
+                android:id="@+id/tvProfileBio"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Passionate about technology and travel. Looking for someone to explore new places and share great coffee with."

@@ -32,6 +32,7 @@ import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 
 import org.json.JSONObject;
 
@@ -64,6 +65,7 @@ public class QuestionnaireActivity extends AppCompatActivity {
     static {
         SUBTITLES.put("gender",        "Tell us who you are");
         SUBTITLES.put("lookingFor",    "Who do you want to meet?");
+        SUBTITLES.put("age",           "How old are you?");
         SUBTITLES.put("goal",          "You can change your goal at any time");
         SUBTITLES.put("height",        "Enter your height below");
         SUBTITLES.put("weight",        "Enter your weight below");
@@ -164,12 +166,13 @@ public class QuestionnaireActivity extends AppCompatActivity {
         tvPlusIcon              = findViewById(R.id.tvPlusIcon);
 
         setupQuestions();
+        loadExistingAnswers();
         updateUIForStep();
 
         // Skip taps just advance without saving this step's answer
         tvSkip.setOnClickListener(v -> {
             if (currentStep >= steps.size() - 1) {
-                finishQuestionnaire(null); // skip photo upload
+                finishQuestionnaire(selectedPhotoUri); // complete with current photo
             } else {
                 currentStep++;
                 selectedOptionIndex = -1;
@@ -197,10 +200,12 @@ public class QuestionnaireActivity extends AppCompatActivity {
         });
     }
 
+
     // ── Setup ───────────────────────────────────────────────────────────────
 
     private void setupQuestions() {
         steps = new ArrayList<>();
+        steps.add(new QuestionStep("age",           "What is your age?",                      QuestionType.TEXT,          null));
         steps.add(new QuestionStep("gender",        "What is your gender?",                   QuestionType.SINGLE_CHOICE, Arrays.asList("Men", "Women", "Other")));
         steps.add(new QuestionStep("lookingFor",    "What are you looking for?",              QuestionType.SINGLE_CHOICE, Arrays.asList("Men", "Women", "Both")));
         steps.add(new QuestionStep("goal",          "What is your goal?",                     QuestionType.SINGLE_CHOICE, Arrays.asList("Get married", "Find a relationship", "Chat and meet friends", "Learn other cultures", "Travel the world")));
@@ -256,22 +261,41 @@ public class QuestionnaireActivity extends AppCompatActivity {
             case TEXT:
                 llTextInput.setVisibility(View.VISIBLE);
                 etTextInput.setText(existing != null ? existing : "");
-                etTextInput.setHint(step.key.equals("height")
-                        ? "e.g., 170cm or 5'7\""
-                        : "e.g., 65kg or 143lbs");
+                if (step.key.equals("age")) {
+                    etTextInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+                    etTextInput.setHint("e.g., 24");
+                } else {
+                    etTextInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
+                    etTextInput.setHint(step.key.equals("height")
+                            ? "e.g., 170cm or 5'7\""
+                            : "e.g., 65kg or 143lbs");
+                }
                 btnNextText.setEnabled(existing != null && !existing.trim().isEmpty());
                 break;
 
             case PHOTO:
                 llPhotoUpload.setVisibility(View.VISIBLE);
                 btnCompleteRegistration.setVisibility(View.VISIBLE);
-                btnCompleteRegistration.setEnabled(selectedPhotoUri != null);
+                
+                String currentPhoto = answers.get("photo");
+                boolean hasPhoto = (selectedPhotoUri != null) || (currentPhoto != null && !currentPhoto.isEmpty());
+                btnCompleteRegistration.setEnabled(hasPhoto);
+                
                 if (selectedPhotoUri != null) {
                     ivSelectedPhoto.setVisibility(View.VISIBLE);
                     tvPlusIcon.setVisibility(View.GONE);
+                    Glide.with(this).load(selectedPhotoUri).centerCrop().into(ivSelectedPhoto);
+                } else if (currentPhoto != null && !currentPhoto.isEmpty()) {
+                    ivSelectedPhoto.setVisibility(View.VISIBLE);
+                    tvPlusIcon.setVisibility(View.GONE);
+                    Glide.with(this).load(currentPhoto).centerCrop().into(ivSelectedPhoto);
+                } else {
+                    ivSelectedPhoto.setVisibility(View.GONE);
+                    tvPlusIcon.setVisibility(View.VISIBLE);
                 }
                 break;
         }
+
     }
 
     /** Dynamically inflates option cards into llOptions */
@@ -470,7 +494,7 @@ public class QuestionnaireActivity extends AppCompatActivity {
             updates.put("photo", photoUrl); // also update the photo field
         }
 
-        db.collection("users").document(user.getUid()).update(updates)
+        db.collection("users").document(user.getUid()).set(updates, SetOptions.merge())
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(this, "Profile completed! Welcome 💕", Toast.LENGTH_SHORT).show();
                     navigateToDashboard();
@@ -517,4 +541,30 @@ public class QuestionnaireActivity extends AppCompatActivity {
         }
         return buffer.toByteArray();
     }
+
+    private void loadExistingAnswers() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) return;
+
+        db.collection("users").document(user.getUid()).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        for (QuestionStep step : steps) {
+                            String value = documentSnapshot.getString(step.key);
+                            if (value != null) {
+                                answers.put(step.key, value);
+                            }
+                        }
+                        String photo = documentSnapshot.getString("photoUrl");
+                        if (photo == null || photo.isEmpty()) {
+                            photo = documentSnapshot.getString("photo");
+                        }
+                        if (photo != null && !photo.isEmpty()) {
+                            answers.put("photo", photo);
+                        }
+                        updateUIForStep();
+                    }
+                });
+    }
 }
+
