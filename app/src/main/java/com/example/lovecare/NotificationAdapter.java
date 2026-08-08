@@ -63,27 +63,49 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
         Toast.makeText(context, "Checking availability...", Toast.LENGTH_SHORT).show();
 
-        // Check if current user has an active LoveSpace
+        // Check if a LoveSpace (active or past) already existed between these two users
         db.collection("lovespaces")
                 .whereEqualTo("user1Uid", myUid)
-                .whereEqualTo("active", true)
+                .whereEqualTo("user2Uid", targetUid)
                 .get()
-                .addOnSuccessListener(snap1 -> {
-                    if (!snap1.isEmpty()) {
-                        showBlockedDialog(item.getTitle(), "You currently have an active LoveSpace. Please close your current LoveSpace first to connect with " + item.getTitle() + ".");
+                .addOnSuccessListener(ls1 -> {
+                    if (!ls1.isEmpty()) {
+                        showBlockedDialog(item.getTitle(), "You have already ended a LoveSpace connection with " + item.getTitle() + ".");
                         return;
                     }
                     db.collection("lovespaces")
+                            .whereEqualTo("user1Uid", targetUid)
                             .whereEqualTo("user2Uid", myUid)
-                            .whereEqualTo("active", true)
                             .get()
-                            .addOnSuccessListener(snap2 -> {
-                                if (!snap2.isEmpty()) {
-                                    showBlockedDialog(item.getTitle(), "You currently have an active LoveSpace. Please close your current LoveSpace first to connect with " + item.getTitle() + ".");
-                                } else {
-                                    // Current user is free, now check target user
-                                    checkTargetUserAndConnect(myUid, targetUid, item.getTitle());
+                            .addOnSuccessListener(ls2 -> {
+                                if (!ls2.isEmpty()) {
+                                    showBlockedDialog(item.getTitle(), "You have already ended a LoveSpace connection with " + item.getTitle() + ".");
+                                    return;
                                 }
+
+                                // Check if current user has an active LoveSpace with anyone else
+                                db.collection("lovespaces")
+                                        .whereEqualTo("user1Uid", myUid)
+                                        .whereEqualTo("active", true)
+                                        .get()
+                                        .addOnSuccessListener(snap1 -> {
+                                            if (!snap1.isEmpty()) {
+                                                showBlockedDialog(item.getTitle(), "You currently have an active LoveSpace. Please close your current LoveSpace first to connect with " + item.getTitle() + ".");
+                                                return;
+                                            }
+                                            db.collection("lovespaces")
+                                                    .whereEqualTo("user2Uid", myUid)
+                                                    .whereEqualTo("active", true)
+                                                    .get()
+                                                    .addOnSuccessListener(snap2 -> {
+                                                        if (!snap2.isEmpty()) {
+                                                            showBlockedDialog(item.getTitle(), "You currently have an active LoveSpace. Please close your current LoveSpace first to connect with " + item.getTitle() + ".");
+                                                        } else {
+                                                            // Current user is free, now check target user
+                                                            checkTargetUserAndConnect(myUid, targetUid, item.getTitle());
+                                                        }
+                                                    });
+                                        });
                             });
                 });
     }

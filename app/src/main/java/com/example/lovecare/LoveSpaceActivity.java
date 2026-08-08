@@ -12,22 +12,38 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
 import com.bumptech.glide.Glide;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.imageview.ShapeableImageView;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class LoveSpaceActivity extends AppCompatActivity {
 
@@ -42,9 +58,17 @@ public class LoveSpaceActivity extends AppCompatActivity {
 
     private String selectedCalendarDate;
 
+    // ── XP & Level Views ──────────────────────────────────────────────────────
+    private TextView tvLevelInfo;
+    private TextView tvXpRatio;
+    private LinearProgressIndicator xpProgress;
+
     // ── Firebase ──────────────────────────────────────────────────────────────
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
+    private DatabaseReference chatRef;
+    private ValueEventListener chatMessageListener;
+
     private String currentUid;
     private String activeLoveSpaceId;
     private String partnerUid;
@@ -82,6 +106,10 @@ public class LoveSpaceActivity extends AppCompatActivity {
         calendarMenuDim = findViewById(R.id.calendarMenuDim);
         emojiSelectorCard = findViewById(R.id.emojiSelectorCard);
         tvUserEmojiOverlay = findViewById(R.id.tvUserEmojiOverlay);
+
+        tvLevelInfo = findViewById(R.id.tvLevelInfo);
+        tvXpRatio   = findViewById(R.id.tvXpRatio);
+        xpProgress  = findViewById(R.id.xpProgress);
 
         // LoveSpace state views
         llEmptyState = findViewById(R.id.llEmptyState);
@@ -137,6 +165,14 @@ public class LoveSpaceActivity extends AppCompatActivity {
         loadActiveLoveSpace();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (chatRef != null && chatMessageListener != null) {
+            chatRef.removeEventListener(chatMessageListener);
+        }
+    }
+
     // ── Load Active LoveSpace ─────────────────────────────────────────────────
 
     private void loadActiveLoveSpace() {
@@ -152,6 +188,7 @@ public class LoveSpaceActivity extends AppCompatActivity {
                         partnerUid = doc.getString("user2Uid");
                         showActiveLoveSpace();
                         loadPartnerProfile();
+                        setupRealtimeXpAndStreak();
                         return;
                     }
                     // Check where user is user2Uid
@@ -166,6 +203,7 @@ public class LoveSpaceActivity extends AppCompatActivity {
                                     partnerUid = doc.getString("user1Uid");
                                     showActiveLoveSpace();
                                     loadPartnerProfile();
+                                    setupRealtimeXpAndStreak();
                                 } else {
                                     showEmptyState();
                                 }
@@ -173,6 +211,43 @@ public class LoveSpaceActivity extends AppCompatActivity {
                             .addOnFailureListener(e -> showEmptyState());
                 })
                 .addOnFailureListener(e -> showEmptyState());
+    }
+
+    // ── Realtime Message Count & XP / Level Streak ───────────────────────────
+
+    private void setupRealtimeXpAndStreak() {
+        if (currentUid == null || partnerUid == null) return;
+        String chatId = currentUid.compareTo(partnerUid) < 0 ? currentUid + "_" + partnerUid : partnerUid + "_" + currentUid;
+
+        if (chatRef != null && chatMessageListener != null) {
+            chatRef.removeEventListener(chatMessageListener);
+        }
+
+        chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId).child("messages");
+        chatMessageListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                long msgCount = snapshot.getChildrenCount();
+                long totalXp = msgCount * 10L; // 10 XP per message sent
+                int level = (int) (totalXp / 1000) + 1;
+                int currentLevelXp = (int) (totalXp % 1000);
+
+                if (tvLevelInfo != null) {
+                    tvLevelInfo.setText("LEVEL " + String.format(Locale.getDefault(), "%02d", level) + " 🔥 (" + msgCount + " msgs)");
+                }
+                if (tvXpRatio != null) {
+                    tvXpRatio.setText(currentLevelXp + " / 1000 XP");
+                }
+                if (xpProgress != null) {
+                    xpProgress.setMax(1000);
+                    xpProgress.setProgress(currentLevelXp);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        };
+        chatRef.addValueEventListener(chatMessageListener);
     }
 
     private void loadPartnerProfile() {
@@ -197,7 +272,6 @@ public class LoveSpaceActivity extends AppCompatActivity {
                             ivPartnerProfile.setVisibility(View.INVISIBLE);
                         }
 
-                        // Load partner photo
                         String photoUrl = userDoc.getString("photoUrl");
                         if (photoUrl == null || photoUrl.isEmpty()) photoUrl = userDoc.getString("photo");
 
@@ -228,7 +302,6 @@ public class LoveSpaceActivity extends AppCompatActivity {
                                     .into(ivPartnerProfile);
                         }
 
-                        // Load current user photo
                         loadCurrentUserProfile();
                     }
                 });
@@ -322,6 +395,8 @@ public class LoveSpaceActivity extends AppCompatActivity {
             return;
         }
 
+        final String oldPartnerUid = partnerUid;
+
         db.collection("lovespaces").document(activeLoveSpaceId)
                 .update("active", false)
                 .addOnSuccessListener(aVoid -> {
@@ -330,98 +405,43 @@ public class LoveSpaceActivity extends AppCompatActivity {
                     partnerUid = null;
                     showEmptyState();
 
-                    // Check if there's a pending mutual match now that the user is free
-                    checkForPendingMutualMatches();
+                    // Delete stale mutual match notifications between these two users
+                    if (oldPartnerUid != null && !oldPartnerUid.isEmpty()) {
+                        cleanupNotificationsBetweenUsers(currentUid, oldPartnerUid);
+                    }
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to close LoveSpace: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
-    private void checkForPendingMutualMatches() {
-        if (currentUid == null || currentUid.isEmpty()) return;
-
+    private void cleanupNotificationsBetweenUsers(String uid1, String uid2) {
+        if (uid1 == null || uid2 == null) return;
         db.collection("notifications")
-                .whereEqualTo("toUid", currentUid)
-                .whereEqualTo("type", "mutual_like_blocked")
+                .whereEqualTo("toUid", uid1)
+                .whereEqualTo("fromUid", uid2)
                 .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    if (querySnapshot.isEmpty()) return;
-
-                    // Get the latest pending match
-                    DocumentSnapshot latestNotif = null;
-                    long latestTime = -1;
-                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                        Long ts = doc.getLong("timestamp");
-                        if (ts != null && ts > latestTime) {
-                            latestTime = ts;
-                            latestNotif = doc;
-                        }
+                .addOnSuccessListener(snap -> {
+                    for (DocumentSnapshot doc : snap.getDocuments()) {
+                        doc.getReference().delete();
                     }
-
-                    if (latestNotif != null) {
-                        String pendingUid = latestNotif.getString("fromUid");
-                        String pendingName = latestNotif.getString("fromName");
-                        if (pendingName == null) pendingName = "Someone";
-
-                        if (pendingUid != null && !pendingUid.isEmpty()) {
-                            checkAndPromptPendingMatch(pendingUid, pendingName);
-                        }
+                });
+        db.collection("notifications")
+                .whereEqualTo("toUid", uid2)
+                .whereEqualTo("fromUid", uid1)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    for (DocumentSnapshot doc : snap.getDocuments()) {
+                        doc.getReference().delete();
                     }
                 });
     }
 
-    private void checkAndPromptPendingMatch(String targetUid, String targetName) {
-        // Check if targetUid also has no active LoveSpace
-        db.collection("lovespaces")
-                .whereEqualTo("user1Uid", targetUid)
-                .whereEqualTo("active", true)
-                .get()
-                .addOnSuccessListener(snap1 -> {
-                    if (!snap1.isEmpty()) return; // target user is in another LoveSpace
-
-                    db.collection("lovespaces")
-                            .whereEqualTo("user2Uid", targetUid)
-                            .whereEqualTo("active", true)
-                            .get()
-                            .addOnSuccessListener(snap2 -> {
-                                if (!snap2.isEmpty()) return; // target user is in another LoveSpace
-
-                                // Both are free! Prompt the user
-                                new AlertDialog.Builder(this)
-                                        .setTitle("💕 Pending Match Available!")
-                                        .setMessage("You have a pending mutual match with " + targetName + "! Would you like to start a LoveSpace with them now?")
-                                        .setPositiveButton("Start LoveSpace", (dialog, which) -> {
-                                            createLoveSpaceWithPending(targetUid);
-                                        })
-                                        .setNegativeButton("Not Now", null)
-                                        .show();
-                            });
-                });
-    }
-
-    private void createLoveSpaceWithPending(String targetUid) {
-        java.util.Map<String, Object> loveSpace = new java.util.HashMap<>();
-        loveSpace.put("user1Uid", currentUid);
-        loveSpace.put("user2Uid", targetUid);
-        loveSpace.put("createdAt", System.currentTimeMillis());
-        loveSpace.put("active", true);
-
-        db.collection("lovespaces").add(loveSpace)
-                .addOnSuccessListener(ref -> {
-                    Toast.makeText(this, "LoveSpace created! 💕", Toast.LENGTH_SHORT).show();
-                    loadActiveLoveSpace(); // Reload to display the new active LoveSpace
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Failed to create LoveSpace", Toast.LENGTH_SHORT).show());
-    }
-
-    // ── Calendar Interaction ──────────────────────────────────────────────────
+    // ── Calendar Interaction & Event Backend Integration ─────────────────────
 
     private void setupCalendarInteraction() {
         CalendarView calendarView = findViewById(R.id.calendarView);
         if (calendarView == null) return;
 
-        // live date
         Calendar c = Calendar.getInstance();
         selectedCalendarDate = String.format(Locale.getDefault(), "%02d/%02d/%d",
                 c.get(Calendar.DAY_OF_MONTH), (c.get(Calendar.MONTH) + 1), c.get(Calendar.YEAR));
@@ -433,11 +453,10 @@ public class LoveSpaceActivity extends AppCompatActivity {
             }
         });
 
-        // calander long press buttonn
         calendarView.setOnTouchListener(new View.OnTouchListener() {
             private final Runnable longPressRunnable = () -> showCalendarContextMenu();
             private float startX, startY;
-            private static final int CALENDAR_HOLD_THRESHOLD = 800; // 0.8s hold to trigger
+            private static final int CALENDAR_HOLD_THRESHOLD = 800;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -448,7 +467,6 @@ public class LoveSpaceActivity extends AppCompatActivity {
                         longPressHandler.postDelayed(longPressRunnable, CALENDAR_HOLD_THRESHOLD);
                         break;
                     case MotionEvent.ACTION_MOVE:
-                        // Cancel hold if finger moves too much (slop)
                         if (Math.abs(event.getX() - startX) > 30 || Math.abs(event.getY() - startY) > 30) {
                             longPressHandler.removeCallbacks(longPressRunnable);
                         }
@@ -512,12 +530,12 @@ public class LoveSpaceActivity extends AppCompatActivity {
 
         findViewById(R.id.btnCalendarViewDetails).setOnClickListener(v -> {
             hideCalendarContextMenu();
-            Toast.makeText(this, "Details for " + selectedCalendarDate, Toast.LENGTH_SHORT).show();
+            showViewDetailsDialog(selectedCalendarDate);
         });
 
         findViewById(R.id.btnCalendarAddNote).setOnClickListener(v -> {
             hideCalendarContextMenu();
-            Toast.makeText(this, "Adding note for " + selectedCalendarDate, Toast.LENGTH_SHORT).show();
+            showAddNoteDialog(selectedCalendarDate);
         });
 
         if (calendarMenuDim != null) {
@@ -602,18 +620,129 @@ public class LoveSpaceActivity extends AppCompatActivity {
         }
     }
 
+    // ── Firestore Event Operations ───────────────────────────────────────────
+
     private void showAddEventDialog(String date) {
+        if (activeLoveSpaceId == null || activeLoveSpaceId.isEmpty()) {
+            Toast.makeText(this, "No active LoveSpace connection", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Plan for " + date);
+        builder.setTitle("📅 Add Event for " + date);
         final TextInputEditText input = new TextInputEditText(this);
-        input.setHint("Enter activity...");
+        input.setHint("Enter event/activity name...");
         builder.setView(input);
-        builder.setPositiveButton("Save", (dialog, which) -> {
-            if (input.getText() != null && !input.getText().toString().isEmpty()) {
-                Toast.makeText(this, "Activity saved for " + date, Toast.LENGTH_SHORT).show();
+
+        builder.setPositiveButton("Save Event", (dialog, which) -> {
+            String title = input.getText() != null ? input.getText().toString().trim() : "";
+            if (!title.isEmpty()) {
+                saveLoveSpaceEvent(date, title, "Event");
             }
         });
         builder.setNegativeButton("Cancel", null);
         builder.show();
+    }
+
+    private void showAddNoteDialog(String date) {
+        if (activeLoveSpaceId == null || activeLoveSpaceId.isEmpty()) {
+            Toast.makeText(this, "No active LoveSpace connection", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("📝 Add Note for " + date);
+        final TextInputEditText input = new TextInputEditText(this);
+        input.setHint("Enter your special note...");
+        builder.setView(input);
+
+        builder.setPositiveButton("Save Note", (dialog, which) -> {
+            String note = input.getText() != null ? input.getText().toString().trim() : "";
+            if (!note.isEmpty()) {
+                saveLoveSpaceEvent(date, note, "Note");
+            }
+        });
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
+    }
+
+    private void saveLoveSpaceEvent(String date, String title, String type) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("loveSpaceId", activeLoveSpaceId);
+        event.put("date", date);
+        event.put("title", title);
+        event.put("type", type);
+        event.put("createdBy", currentUid);
+        event.put("createdAt", System.currentTimeMillis());
+
+        db.collection("lovespace_events")
+                .add(event)
+                .addOnSuccessListener(docRef ->
+                        Toast.makeText(this, type + " saved for " + date + " 💕", Toast.LENGTH_SHORT).show())
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to save " + type + ": " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    private void showViewDetailsDialog(String date) {
+        if (activeLoveSpaceId == null || activeLoveSpaceId.isEmpty()) {
+            Toast.makeText(this, "No active LoveSpace connection", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Toast.makeText(this, "Loading details for " + date + "...", Toast.LENGTH_SHORT).show();
+
+        db.collection("lovespace_events")
+                .whereEqualTo("loveSpaceId", activeLoveSpaceId)
+                .whereEqualTo("date", date)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) {
+                        new AlertDialog.Builder(this)
+                                .setTitle("📅 Plans for " + date)
+                                .setMessage("No events or notes added for this date yet. Tap 'Add Event' or 'Add Note' to create one! 💕")
+                                .setPositiveButton("OK", null)
+                                .show();
+                        return;
+                    }
+
+                    List<QueryDocumentSnapshot> docs = new ArrayList<>();
+                    List<String> displayItems = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        docs.add(doc);
+                        String type = doc.getString("type");
+                        String title = doc.getString("title");
+                        String icon = "Note".equalsIgnoreCase(type) ? "📝" : "📅";
+                        displayItems.add(icon + " " + (title != null ? title : "Untitled"));
+                    }
+
+                    String[] itemsArray = displayItems.toArray(new String[0]);
+
+                    new AlertDialog.Builder(this)
+                            .setTitle("✨ Plans for " + date)
+                            .setItems(itemsArray, (dialog, which) -> {
+                                QueryDocumentSnapshot selectedDoc = docs.get(which);
+                                showDeleteEventConfirmDialog(selectedDoc.getId(), date);
+                            })
+                            .setPositiveButton("Close", null)
+                            .show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Error fetching events: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    private void showDeleteEventConfirmDialog(String eventDocId, String date) {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Item?")
+                .setMessage("Do you want to delete this event/note?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    db.collection("lovespace_events").document(eventDocId)
+                            .delete()
+                            .addOnSuccessListener(aVoid ->
+                                    Toast.makeText(this, "Deleted successfully", Toast.LENGTH_SHORT).show())
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(this, "Failed to delete item", Toast.LENGTH_SHORT).show());
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 }
