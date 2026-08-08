@@ -450,7 +450,9 @@ public class HomeActivity extends AppCompatActivity {
             showEmptyState();
             return;
         }
-        currentIndex++;
+        if (currentIndex < suggestedUsers.size()) {
+            currentIndex++;
+        }
         if (currentIndex >= suggestedUsers.size()) {
             showEmptyState();
         } else {
@@ -910,7 +912,9 @@ public class HomeActivity extends AppCompatActivity {
 
     private void onSwipeLeft() {
         if (!suggestedUsers.isEmpty()) {
-            currentIndex++;
+            if (currentIndex < suggestedUsers.size()) {
+                currentIndex++;
+            }
             if (currentIndex >= suggestedUsers.size()) {
                 showEmptyState();
             } else {

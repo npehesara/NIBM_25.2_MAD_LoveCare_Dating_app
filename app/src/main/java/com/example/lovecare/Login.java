@@ -5,8 +5,11 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.text.method.HideReturnsTransformationMethod;
+import android.text.method.PasswordTransformationMethod;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -31,6 +34,7 @@ public class Login extends AppCompatActivity {
     private EditText etEmail, etPassword;
     private AppCompatButton btnLogin;
     private TextView tvSignUp;
+    private boolean isPasswordVisible = false;
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
@@ -63,6 +67,22 @@ public class Login extends AppCompatActivity {
         }
 
         btnLogin.setOnClickListener(v -> performLogin());
+
+        ImageView ivShowPassword = findViewById(R.id.ivShowPassword);
+        if (ivShowPassword != null) {
+            ivShowPassword.setOnClickListener(v -> {
+                if (isPasswordVisible) {
+                    etPassword.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                    ivShowPassword.setColorFilter(android.graphics.Color.parseColor("#80000000"));
+                    isPasswordVisible = false;
+                } else {
+                    etPassword.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
+                    ivShowPassword.setColorFilter(android.graphics.Color.parseColor("#E91E63"));
+                    isPasswordVisible = true;
+                }
+                etPassword.setSelection(etPassword.getText().length());
+            });
+        }
     }
 
     private void performLogin() {
