@@ -509,9 +509,9 @@ public class HomeActivity extends AppCompatActivity {
             applyClickEffect(v);
             if (!suggestedUsers.isEmpty() && currentIndex < suggestedUsers.size()) {
                 DocumentSnapshot targetUser = suggestedUsers.get(currentIndex);
-                Intent intent = new Intent(this, UserChatActivity.class);
+                Intent intent = new Intent(this, LoveSpaceMessage.class);
                 intent.putExtra("userId",    targetUser.getId());
-                intent.putExtra("userName",  targetUser.getString("name"));
+                intent.putExtra("username",  targetUser.getString("name"));
                 intent.putExtra("userPhoto", targetUser.getString("photoUrl"));
                 startActivity(intent);
             }

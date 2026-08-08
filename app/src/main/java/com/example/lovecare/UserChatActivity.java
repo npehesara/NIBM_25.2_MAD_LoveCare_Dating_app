@@ -7,8 +7,10 @@ import android.text.TextWatcher;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -17,6 +19,14 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,11 +45,26 @@ public class UserChatActivity extends AppCompatActivity {
     private List<ChatItem> chatList;
     private List<NotificationItem> notificationList;
 
+    private FirebaseAuth mAuth;
+    private DatabaseReference chatsRef;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_user_chat);
+
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            Intent intent = new Intent(this, Login.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
+        chatsRef = FirebaseDatabase.getInstance().getReference("chats");
 
         View root = findViewById(R.id.chatRoot);
         BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
@@ -55,7 +80,7 @@ public class UserChatActivity extends AppCompatActivity {
 
         initViews();
         setupTabs();
-        setupChatList();
+        setupChatList(currentUser.getUid());
         setupNotificationList();
         setupSearch();
         setupBottomNavigation(bottomNav);
@@ -103,24 +128,88 @@ public class UserChatActivity extends AppCompatActivity {
         }
     }
 
-    private void setupChatList() {
+    private void setupChatList(String myUid) {
         chatList = new ArrayList<>();
-        chatList.add(new ChatItem("testacc", "Tap to view message...", "2m ago", R.drawable.ic_launcher_foreground, true));
-        chatList.add(new ChatItem("dartb44", "Tap to view message...", "15m ago", R.drawable.ic_menu_gallery_boy, true));
-        chatList.add(new ChatItem("lljllooo", "Tap to view message...", "1h ago", R.drawable.ic_menu_gallery_girl, false));
-        chatList.add(new ChatItem("gizemtheeeekend", "Tap to view message...", "2h ago", R.drawable.ic_launcher_foreground, true));
-        chatList.add(new ChatItem("KAMIL", "Tap to view message...", "5h ago", R.drawable.ic_menu_gallery_boy, false));
-        chatList.add(new ChatItem("cryingbaby", "Tap to view message...", "1d ago", R.drawable.ic_menu_gallery_girl, true));
-
         chatAdapter = new ChatAdapter(this, chatList);
         rvChats.setLayoutManager(new LinearLayoutManager(this));
         rvChats.setAdapter(chatAdapter);
+
+        // Fetch real-time chat nodes from Firebase Realtime Database
+        chatsRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                final List<ChatItem> tempList = new ArrayList<>();
+                final int[] pendingFetches = {0};
+
+                for (DataSnapshot chatSnapshot : snapshot.getChildren()) {
+                    String chatId = chatSnapshot.getKey();
+                    if (chatId != null && chatId.contains(myUid)) {
+                        String[] parts = chatId.split("_");
+                        if (parts.length != 2) continue;
+                        String partnerUid = parts[0].equals(myUid) ? parts[1] : parts[0];
+
+                        // Find the last message
+                        DataSnapshot messagesSnapshot = chatSnapshot.child("messages");
+                        String lastMsg = "No messages yet";
+                        String lastTime = "";
+                        long maxTimestamp = -1;
+
+                        for (DataSnapshot msgSnap : messagesSnapshot.getChildren()) {
+                            Long ts = msgSnap.child("timestamp").getValue(Long.class);
+                            if (ts != null && ts > maxTimestamp) {
+                                maxTimestamp = ts;
+                                lastMsg = msgSnap.child("messageText").getValue(String.class);
+                                lastTime = msgSnap.child("time").getValue(String.class);
+                            }
+                        }
+
+                        final String finalMsg = lastMsg;
+                        final String finalTime = lastTime;
+                        pendingFetches[0]++;
+
+                        // Fetch details of conversation partner from Firestore
+                        FirebaseFirestore.getInstance().collection("users").document(partnerUid).get()
+                                .addOnSuccessListener(userDoc -> {
+                                    if (userDoc.exists()) {
+                                        String name = userDoc.getString("name");
+                                        String photo = userDoc.getString("photoUrl");
+                                        if (photo == null || photo.isEmpty()) photo = userDoc.getString("photo");
+
+                                        tempList.add(new ChatItem(partnerUid, name != null ? name : "User", finalMsg, finalTime != null ? finalTime : "", photo, 0, true));
+                                    }
+                                    pendingFetches[0]--;
+                                    if (pendingFetches[0] == 0) {
+                                        chatList.clear();
+                                        chatList.addAll(tempList);
+                                        chatAdapter.filter(etSearchUser.getText().toString());
+                                    }
+                                })
+                                .addOnFailureListener(e -> {
+                                    pendingFetches[0]--;
+                                    if (pendingFetches[0] == 0) {
+                                        chatList.clear();
+                                        chatList.addAll(tempList);
+                                        chatAdapter.filter(etSearchUser.getText().toString());
+                                    }
+                                });
+                    }
+                }
+
+                if (pendingFetches[0] == 0) {
+                    chatList.clear();
+                    chatAdapter.filter(etSearchUser.getText().toString());
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(UserChatActivity.this, "Failed to load chats: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void setupNotificationList() {
         notificationList = new ArrayList<>();
-        notificationList.add(new NotificationItem("testacc", "Replied to your message", "2m ago", R.drawable.ic_bell));
-        notificationList.add(new NotificationItem("dartb44", "Sent you a new photo", "15m ago", R.drawable.ic_bell));
         notificationList.add(new NotificationItem("System", "Welcome to the messaging module!", "1h ago", R.drawable.ic_bell));
 
         notificationAdapter = new NotificationAdapter(this, notificationList);

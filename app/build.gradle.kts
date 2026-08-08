@@ -57,6 +57,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation(libs.firebase.database)
 
     // Cloudinary / OkHttp for image upload
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
