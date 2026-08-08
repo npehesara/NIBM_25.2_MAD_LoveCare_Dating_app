@@ -263,20 +263,6 @@
             app:fabCustomSize="50dp"
             app:tint="@color/swipe_undo" />
 
-        <!-- Dislike / Pass  (ic_flame) -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/btnDislike"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="8dp"
-            android:contentDescription="Dislike"
-            android:src="@drawable/ic_flame"
-            app:backgroundTint="#80000000"
-            app:borderWidth="0dp"
-            app:elevation="0dp"
-            app:fabCustomSize="62dp"
-            app:tint="@color/swipe_dislike" />
-
         <!-- Super Like  (ic_star) -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnSuperLike"
@@ -288,7 +274,7 @@
             app:backgroundTint="#80000000"
             app:borderWidth="0dp"
             app:elevation="0dp"
-            app:fabCustomSize="50dp"
+            app:fabCustomSize="62dp"
             app:tint="@color/swipe_superlike" />
 
         <!-- Like  (ic_heart) -->
@@ -305,7 +291,7 @@
             app:fabCustomSize="62dp"
             app:tint="@color/swipe_like" />
 
-        <!-- Message  (ic_send) -->
+        <!-- Message / Send (ic_send) -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnMessage"
             android:layout_width="wrap_content"
@@ -318,6 +304,8 @@
             app:elevation="0dp"
             app:fabCustomSize="50dp"
             app:tint="@color/swipe_boost" />
+
+
     </LinearLayout>
 
     <!-- Bottom Navigation -->
