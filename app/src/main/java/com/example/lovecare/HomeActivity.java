@@ -238,6 +238,9 @@ public class HomeActivity extends AppCompatActivity {
                                                             setProfileVisible(true);
                                                             displayUser(suggestedUsers.get(0));
                                                         }
+
+                                                        // Check if there are any unlinked mutual matches ready to connect
+                                                        checkForPendingLoveSpaceNotification(currentUid);
                                                     })
                                                     .addOnFailureListener(e -> {
                                                         android.util.Log.e("HomeActivity", "Failed to fetch users: " + e.getMessage(), e);
@@ -628,6 +631,85 @@ public class HomeActivity extends AppCompatActivity {
         });
         builder.setNegativeButton("Keep Swiping", (dialog, which) -> dialog.dismiss());
         builder.show();
+    }
+
+    /**
+     * Check if the current user has any pending mutual matches (blocked earlier)
+     * where both users are now free.
+     */
+    private void checkForPendingLoveSpaceNotification(String currentUid) {
+        // First check if current user currently has an active LoveSpace
+        db.collection("lovespaces")
+                .whereEqualTo("user1Uid", currentUid)
+                .whereEqualTo("active", true)
+                .get()
+                .addOnSuccessListener(snap1 -> {
+                    if (!snap1.isEmpty()) return; // User already has an active LoveSpace
+                    db.collection("lovespaces")
+                            .whereEqualTo("user2Uid", currentUid)
+                            .whereEqualTo("active", true)
+                            .get()
+                            .addOnSuccessListener(snap2 -> {
+                                if (!snap2.isEmpty()) return; // User already has an active LoveSpace
+
+                                // User is free! Check notifications for pending mutual matches
+                                db.collection("notifications")
+                                        .whereEqualTo("toUid", currentUid)
+                                        .whereEqualTo("type", "mutual_like_blocked")
+                                        .get()
+                                        .addOnSuccessListener(notifSnap -> {
+                                            if (notifSnap.isEmpty()) return;
+
+                                            // Get latest pending notification
+                                            DocumentSnapshot latestDoc = null;
+                                            long maxTs = -1;
+                                            for (DocumentSnapshot doc : notifSnap.getDocuments()) {
+                                                Long ts = doc.getLong("timestamp");
+                                                if (ts != null && ts > maxTs) {
+                                                    maxTs = ts;
+                                                    latestDoc = doc;
+                                                }
+                                            }
+
+                                            if (latestDoc != null) {
+                                                String targetUid = latestDoc.getString("fromUid");
+                                                String targetName = latestDoc.getString("fromName");
+                                                if (targetName == null) targetName = "Someone";
+
+                                                if (targetUid != null && !targetUid.isEmpty()) {
+                                                    checkTargetAndPromptMatch(currentUid, targetUid, targetName);
+                                                }
+                                            }
+                                        });
+                            });
+                });
+    }
+
+    private void checkTargetAndPromptMatch(String myUid, String targetUid, String targetName) {
+        db.collection("lovespaces")
+                .whereEqualTo("user1Uid", targetUid)
+                .whereEqualTo("active", true)
+                .get()
+                .addOnSuccessListener(snap1 -> {
+                    if (!snap1.isEmpty()) return;
+                    db.collection("lovespaces")
+                            .whereEqualTo("user2Uid", targetUid)
+                            .whereEqualTo("active", true)
+                            .get()
+                            .addOnSuccessListener(snap2 -> {
+                                if (!snap2.isEmpty()) return;
+
+                                // Both are free! Offer to create LoveSpace
+                                new AlertDialog.Builder(this)
+                                        .setTitle("💕 Pending Match Ready!")
+                                        .setMessage("You and " + targetName + " mutually matched! Since both of you are now free, would you like to start your LoveSpace now?")
+                                        .setPositiveButton("Start LoveSpace", (dialog, which) -> {
+                                            createLoveSpace(myUid, targetUid);
+                                        })
+                                        .setNegativeButton("Not Now", null)
+                                        .show();
+                            });
+                });
     }
 
     /**

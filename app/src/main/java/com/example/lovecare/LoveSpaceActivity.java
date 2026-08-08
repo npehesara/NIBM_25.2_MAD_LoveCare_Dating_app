@@ -256,9 +256,90 @@ public class LoveSpaceActivity extends AppCompatActivity {
                     activeLoveSpaceId = null;
                     partnerUid = null;
                     showEmptyState();
+
+                    // Check if there's a pending mutual match now that the user is free
+                    checkForPendingMutualMatches();
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to close LoveSpace: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    private void checkForPendingMutualMatches() {
+        if (currentUid == null || currentUid.isEmpty()) return;
+
+        db.collection("notifications")
+                .whereEqualTo("toUid", currentUid)
+                .whereEqualTo("type", "mutual_like_blocked")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) return;
+
+                    // Get the latest pending match
+                    DocumentSnapshot latestNotif = null;
+                    long latestTime = -1;
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        Long ts = doc.getLong("timestamp");
+                        if (ts != null && ts > latestTime) {
+                            latestTime = ts;
+                            latestNotif = doc;
+                        }
+                    }
+
+                    if (latestNotif != null) {
+                        String pendingUid = latestNotif.getString("fromUid");
+                        String pendingName = latestNotif.getString("fromName");
+                        if (pendingName == null) pendingName = "Someone";
+
+                        if (pendingUid != null && !pendingUid.isEmpty()) {
+                            checkAndPromptPendingMatch(pendingUid, pendingName);
+                        }
+                    }
+                });
+    }
+
+    private void checkAndPromptPendingMatch(String targetUid, String targetName) {
+        // Check if targetUid also has no active LoveSpace
+        db.collection("lovespaces")
+                .whereEqualTo("user1Uid", targetUid)
+                .whereEqualTo("active", true)
+                .get()
+                .addOnSuccessListener(snap1 -> {
+                    if (!snap1.isEmpty()) return; // target user is in another LoveSpace
+
+                    db.collection("lovespaces")
+                            .whereEqualTo("user2Uid", targetUid)
+                            .whereEqualTo("active", true)
+                            .get()
+                            .addOnSuccessListener(snap2 -> {
+                                if (!snap2.isEmpty()) return; // target user is in another LoveSpace
+
+                                // Both are free! Prompt the user
+                                new AlertDialog.Builder(this)
+                                        .setTitle("💕 Pending Match Available!")
+                                        .setMessage("You have a pending mutual match with " + targetName + "! Would you like to start a LoveSpace with them now?")
+                                        .setPositiveButton("Start LoveSpace", (dialog, which) -> {
+                                            createLoveSpaceWithPending(targetUid);
+                                        })
+                                        .setNegativeButton("Not Now", null)
+                                        .show();
+                            });
+                });
+    }
+
+    private void createLoveSpaceWithPending(String targetUid) {
+        java.util.Map<String, Object> loveSpace = new java.util.HashMap<>();
+        loveSpace.put("user1Uid", currentUid);
+        loveSpace.put("user2Uid", targetUid);
+        loveSpace.put("createdAt", System.currentTimeMillis());
+        loveSpace.put("active", true);
+
+        db.collection("lovespaces").add(loveSpace)
+                .addOnSuccessListener(ref -> {
+                    Toast.makeText(this, "LoveSpace created! 💕", Toast.LENGTH_SHORT).show();
+                    loadActiveLoveSpace(); // Reload to display the new active LoveSpace
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to create LoveSpace", Toast.LENGTH_SHORT).show());
     }
 
     // ── Calendar Interaction ──────────────────────────────────────────────────
