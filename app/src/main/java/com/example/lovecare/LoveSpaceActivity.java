@@ -73,7 +73,7 @@ public class LoveSpaceActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.btnMessage).setOnClickListener(v -> {
-            Intent intent = new Intent(LoveSpaceActivity.this, LoveSpaceMessage.class);
+            Intent intent = new Intent(LoveSpaceActivity.this, UserChatActivity.class);
             startActivity(intent);
         });
 
