@@ -8,6 +8,8 @@ import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.CalendarView;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
@@ -16,8 +18,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import com.bumptech.glide.Glide;
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+
 import java.util.Calendar;
 import java.util.Locale;
 
@@ -34,6 +42,18 @@ public class LoveSpaceActivity extends AppCompatActivity {
 
     private String selectedCalendarDate;
 
+    // ── Firebase ──────────────────────────────────────────────────────────────
+    private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
+    private String currentUid;
+    private String activeLoveSpaceId;
+    private String partnerUid;
+
+    // ── Views for LoveSpace state ─────────────────────────────────────────────
+    private LinearLayout llEmptyState;
+    private ImageView btnCloseLoveSpace;
+    private View xpCard, coupleVisualContainer, calendarCard, bottomNavContainer;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,10 +69,27 @@ public class LoveSpaceActivity extends AppCompatActivity {
             });
         }
 
+        mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+
+        if (mAuth.getCurrentUser() == null) {
+            finish();
+            return;
+        }
+        currentUid = mAuth.getCurrentUser().getUid();
+
         calendarContextMenuCard = findViewById(R.id.calendarContextMenuCard);
         calendarMenuDim = findViewById(R.id.calendarMenuDim);
         emojiSelectorCard = findViewById(R.id.emojiSelectorCard);
         tvUserEmojiOverlay = findViewById(R.id.tvUserEmojiOverlay);
+
+        // LoveSpace state views
+        llEmptyState = findViewById(R.id.llEmptyState);
+        btnCloseLoveSpace = findViewById(R.id.btnCloseLoveSpace);
+        xpCard = findViewById(R.id.xpCard);
+        coupleVisualContainer = findViewById(R.id.coupleVisualContainer);
+        calendarCard = findViewById(R.id.calendarCard);
+        bottomNavContainer = findViewById(R.id.bottomNavContainer);
 
         // Calendar
         setupCalendarInteraction();
@@ -69,12 +106,21 @@ public class LoveSpaceActivity extends AppCompatActivity {
 
         findViewById(R.id.btnGallery).setOnClickListener(v -> {
             Intent intent = new Intent(LoveSpaceActivity.this, Gallery.class);
+            if (partnerUid != null && !partnerUid.isEmpty()) {
+                intent.putExtra("partnerUid", partnerUid);
+            }
             startActivity(intent);
         });
 
         findViewById(R.id.btnMessage).setOnClickListener(v -> {
-            Intent intent = new Intent(LoveSpaceActivity.this, UserChatActivity.class);
-            startActivity(intent);
+            if (partnerUid != null && !partnerUid.isEmpty()) {
+                Intent intent = new Intent(LoveSpaceActivity.this, LoveSpaceMessage.class);
+                intent.putExtra("userId", partnerUid);
+                startActivity(intent);
+            } else {
+                Intent intent = new Intent(LoveSpaceActivity.this, UserChatActivity.class);
+                startActivity(intent);
+            }
         });
 
         findViewById(R.id.btnAchievementIcon).setOnClickListener(v -> {
@@ -82,8 +128,294 @@ public class LoveSpaceActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        // Close LoveSpace button
+        btnCloseLoveSpace.setOnClickListener(v -> showCloseLoveSpaceDialog());
+
         setupCalendarMenuButtons();
+
+        // Load active LoveSpace from Firebase
+        loadActiveLoveSpace();
     }
+
+    // ── Load Active LoveSpace ─────────────────────────────────────────────────
+
+    private void loadActiveLoveSpace() {
+        // Check where user is user1Uid
+        db.collection("lovespaces")
+                .whereEqualTo("user1Uid", currentUid)
+                .whereEqualTo("active", true)
+                .get()
+                .addOnSuccessListener(snap1 -> {
+                    if (!snap1.isEmpty()) {
+                        DocumentSnapshot doc = snap1.getDocuments().get(0);
+                        activeLoveSpaceId = doc.getId();
+                        partnerUid = doc.getString("user2Uid");
+                        showActiveLoveSpace();
+                        loadPartnerProfile();
+                        return;
+                    }
+                    // Check where user is user2Uid
+                    db.collection("lovespaces")
+                            .whereEqualTo("user2Uid", currentUid)
+                            .whereEqualTo("active", true)
+                            .get()
+                            .addOnSuccessListener(snap2 -> {
+                                if (!snap2.isEmpty()) {
+                                    DocumentSnapshot doc = snap2.getDocuments().get(0);
+                                    activeLoveSpaceId = doc.getId();
+                                    partnerUid = doc.getString("user1Uid");
+                                    showActiveLoveSpace();
+                                    loadPartnerProfile();
+                                } else {
+                                    showEmptyState();
+                                }
+                            })
+                            .addOnFailureListener(e -> showEmptyState());
+                })
+                .addOnFailureListener(e -> showEmptyState());
+    }
+
+    private void loadPartnerProfile() {
+        if (partnerUid == null || partnerUid.isEmpty()) return;
+
+        db.collection("users").document(partnerUid).get()
+                .addOnSuccessListener(userDoc -> {
+                    if (userDoc.exists()) {
+                        String name = userDoc.getString("name");
+                        if (name == null || name.isEmpty()) name = "Partner";
+
+                        View flPartnerLetterAvatar = findViewById(R.id.flPartnerLetterAvatar);
+                        TextView tvPartnerAvatarLetter = findViewById(R.id.tvPartnerAvatarLetter);
+                        ShapeableImageView ivPartnerProfile = findViewById(R.id.ivPartnerProfile);
+
+                        if (flPartnerLetterAvatar != null && tvPartnerAvatarLetter != null) {
+                            flPartnerLetterAvatar.setVisibility(View.VISIBLE);
+                            char letter = name.trim().length() > 0 ? Character.toUpperCase(name.trim().charAt(0)) : '?';
+                            tvPartnerAvatarLetter.setText(String.valueOf(letter));
+                        }
+                        if (ivPartnerProfile != null) {
+                            ivPartnerProfile.setVisibility(View.INVISIBLE);
+                        }
+
+                        // Load partner photo
+                        String photoUrl = userDoc.getString("photoUrl");
+                        if (photoUrl == null || photoUrl.isEmpty()) photoUrl = userDoc.getString("photo");
+
+                        if (photoUrl != null && !photoUrl.isEmpty() && photoUrl.startsWith("http") && ivPartnerProfile != null) {
+                            Glide.with(this)
+                                    .load(photoUrl)
+                                    .centerCrop()
+                                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                                        @Override
+                                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
+                                                                    Object model,
+                                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                                    boolean isFirstResource) {
+                                            return false;
+                                        }
+
+                                        @Override
+                                        public boolean onResourceReady(android.graphics.drawable.Drawable resource,
+                                                                       Object model,
+                                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                                       com.bumptech.glide.load.DataSource dataSource,
+                                                                       boolean isFirstResource) {
+                                            if (flPartnerLetterAvatar != null) flPartnerLetterAvatar.setVisibility(View.GONE);
+                                            if (ivPartnerProfile != null) ivPartnerProfile.setVisibility(View.VISIBLE);
+                                            return false;
+                                        }
+                                    })
+                                    .into(ivPartnerProfile);
+                        }
+
+                        // Load current user photo
+                        loadCurrentUserProfile();
+                    }
+                });
+    }
+
+    private void loadCurrentUserProfile() {
+        db.collection("users").document(currentUid).get()
+                .addOnSuccessListener(userDoc -> {
+                    if (userDoc.exists()) {
+                        String name = userDoc.getString("name");
+                        if (name == null || name.isEmpty()) name = "User";
+
+                        View flUserLetterAvatar = findViewById(R.id.flUserLetterAvatar);
+                        TextView tvUserAvatarLetter = findViewById(R.id.tvUserAvatarLetter);
+                        ShapeableImageView ivUserProfile = findViewById(R.id.ivUserProfile);
+
+                        if (flUserLetterAvatar != null && tvUserAvatarLetter != null) {
+                            flUserLetterAvatar.setVisibility(View.VISIBLE);
+                            char letter = name.trim().length() > 0 ? Character.toUpperCase(name.trim().charAt(0)) : '?';
+                            tvUserAvatarLetter.setText(String.valueOf(letter));
+                        }
+                        if (ivUserProfile != null) {
+                            ivUserProfile.setVisibility(View.INVISIBLE);
+                        }
+
+                        String photoUrl = userDoc.getString("photoUrl");
+                        if (photoUrl == null || photoUrl.isEmpty()) photoUrl = userDoc.getString("photo");
+
+                        if (photoUrl != null && !photoUrl.isEmpty() && photoUrl.startsWith("http") && ivUserProfile != null) {
+                            Glide.with(this)
+                                    .load(photoUrl)
+                                    .centerCrop()
+                                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                                        @Override
+                                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
+                                                                    Object model,
+                                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                                    boolean isFirstResource) {
+                                            return false;
+                                        }
+
+                                        @Override
+                                        public boolean onResourceReady(android.graphics.drawable.Drawable resource,
+                                                                       Object model,
+                                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                                       com.bumptech.glide.load.DataSource dataSource,
+                                                                       boolean isFirstResource) {
+                                            if (flUserLetterAvatar != null) flUserLetterAvatar.setVisibility(View.GONE);
+                                            if (ivUserProfile != null) ivUserProfile.setVisibility(View.VISIBLE);
+                                            return false;
+                                        }
+                                    })
+                                    .into(ivUserProfile);
+                        }
+                    }
+                });
+    }
+
+    private void showActiveLoveSpace() {
+        llEmptyState.setVisibility(View.GONE);
+        btnCloseLoveSpace.setVisibility(View.VISIBLE);
+        xpCard.setVisibility(View.VISIBLE);
+        coupleVisualContainer.setVisibility(View.VISIBLE);
+        calendarCard.setVisibility(View.VISIBLE);
+        bottomNavContainer.setVisibility(View.VISIBLE);
+    }
+
+    private void showEmptyState() {
+        llEmptyState.setVisibility(View.VISIBLE);
+        btnCloseLoveSpace.setVisibility(View.GONE);
+        xpCard.setVisibility(View.GONE);
+        coupleVisualContainer.setVisibility(View.GONE);
+        calendarCard.setVisibility(View.GONE);
+        bottomNavContainer.setVisibility(View.GONE);
+    }
+
+    // ── Close LoveSpace ───────────────────────────────────────────────────────
+
+    private void showCloseLoveSpaceDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Close LoveSpace")
+                .setMessage("Are you sure you want to close this LoveSpace? This will end the connection for both of you. 💔")
+                .setPositiveButton("Close", (dialog, which) -> closeLoveSpace())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void closeLoveSpace() {
+        if (activeLoveSpaceId == null || activeLoveSpaceId.isEmpty()) {
+            Toast.makeText(this, "No active LoveSpace to close", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        db.collection("lovespaces").document(activeLoveSpaceId)
+                .update("active", false)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "LoveSpace closed 💔", Toast.LENGTH_SHORT).show();
+                    activeLoveSpaceId = null;
+                    partnerUid = null;
+                    showEmptyState();
+
+                    // Check if there's a pending mutual match now that the user is free
+                    checkForPendingMutualMatches();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to close LoveSpace: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    private void checkForPendingMutualMatches() {
+        if (currentUid == null || currentUid.isEmpty()) return;
+
+        db.collection("notifications")
+                .whereEqualTo("toUid", currentUid)
+                .whereEqualTo("type", "mutual_like_blocked")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) return;
+
+                    // Get the latest pending match
+                    DocumentSnapshot latestNotif = null;
+                    long latestTime = -1;
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        Long ts = doc.getLong("timestamp");
+                        if (ts != null && ts > latestTime) {
+                            latestTime = ts;
+                            latestNotif = doc;
+                        }
+                    }
+
+                    if (latestNotif != null) {
+                        String pendingUid = latestNotif.getString("fromUid");
+                        String pendingName = latestNotif.getString("fromName");
+                        if (pendingName == null) pendingName = "Someone";
+
+                        if (pendingUid != null && !pendingUid.isEmpty()) {
+                            checkAndPromptPendingMatch(pendingUid, pendingName);
+                        }
+                    }
+                });
+    }
+
+    private void checkAndPromptPendingMatch(String targetUid, String targetName) {
+        // Check if targetUid also has no active LoveSpace
+        db.collection("lovespaces")
+                .whereEqualTo("user1Uid", targetUid)
+                .whereEqualTo("active", true)
+                .get()
+                .addOnSuccessListener(snap1 -> {
+                    if (!snap1.isEmpty()) return; // target user is in another LoveSpace
+
+                    db.collection("lovespaces")
+                            .whereEqualTo("user2Uid", targetUid)
+                            .whereEqualTo("active", true)
+                            .get()
+                            .addOnSuccessListener(snap2 -> {
+                                if (!snap2.isEmpty()) return; // target user is in another LoveSpace
+
+                                // Both are free! Prompt the user
+                                new AlertDialog.Builder(this)
+                                        .setTitle("💕 Pending Match Available!")
+                                        .setMessage("You have a pending mutual match with " + targetName + "! Would you like to start a LoveSpace with them now?")
+                                        .setPositiveButton("Start LoveSpace", (dialog, which) -> {
+                                            createLoveSpaceWithPending(targetUid);
+                                        })
+                                        .setNegativeButton("Not Now", null)
+                                        .show();
+                            });
+                });
+    }
+
+    private void createLoveSpaceWithPending(String targetUid) {
+        java.util.Map<String, Object> loveSpace = new java.util.HashMap<>();
+        loveSpace.put("user1Uid", currentUid);
+        loveSpace.put("user2Uid", targetUid);
+        loveSpace.put("createdAt", System.currentTimeMillis());
+        loveSpace.put("active", true);
+
+        db.collection("lovespaces").add(loveSpace)
+                .addOnSuccessListener(ref -> {
+                    Toast.makeText(this, "LoveSpace created! 💕", Toast.LENGTH_SHORT).show();
+                    loadActiveLoveSpace(); // Reload to display the new active LoveSpace
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to create LoveSpace", Toast.LENGTH_SHORT).show());
+    }
+
+    // ── Calendar Interaction ──────────────────────────────────────────────────
 
     private void setupCalendarInteraction() {
         CalendarView calendarView = findViewById(R.id.calendarView);

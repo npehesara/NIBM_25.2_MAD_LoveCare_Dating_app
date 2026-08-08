@@ -26,6 +26,61 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Close LoveSpace button -->
+    <ImageView
+        android:id="@+id/btnCloseLoveSpace"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginTop="28dp"
+        android:layout_marginEnd="20dp"
+        android:src="@drawable/ic_back"
+        android:rotation="180"
+        android:padding="6dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Close LoveSpace"
+        android:visibility="gone"
+        app:tint="#FF4D6D"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Empty state when no LoveSpace is active -->
+    <LinearLayout
+        android:id="@+id/llEmptyState"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:padding="32dp"
+        app:layout_constraintTop_toBottomOf="@id/tvHeaderTitle"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="💔"
+            android:textSize="64sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="No Active LoveSpace"
+            android:textColor="#FFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:fontFamily="serif" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Like someone and get liked back to create one!"
+            android:textColor="#80FFFFFF"
+            android:textSize="14sp"
+            android:gravity="center" />
+    </LinearLayout>
+
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/xpCard"
         android:layout_width="0dp"
@@ -117,14 +172,33 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
+            <!-- Fallback Letter Avatar -->
+            <FrameLayout
+                android:id="@+id/flUserLetterAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="6dp"
+                android:background="@drawable/bg_pink_circle">
+
+                <TextView
+                    android:id="@+id/tvUserAvatarLetter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="U"
+                    android:textColor="#FFFFFF"
+                    android:textSize="44sp"
+                    android:textStyle="bold" />
+            </FrameLayout>
+
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivUserProfile"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:padding="6dp"
                 android:scaleType="centerCrop"
-                android:src="@drawable/ic_menu_gallery_girl"
                 android:clickable="false"
+                android:visibility="invisible"
                 app:shapeAppearanceOverlay="@style/CircleImage"
                 app:strokeColor="#FF4D6D"
                 app:strokeWidth="4dp" />
@@ -167,13 +241,32 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
+            <!-- Fallback Letter Avatar -->
+            <FrameLayout
+                android:id="@+id/flPartnerLetterAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="6dp"
+                android:background="@drawable/bg_pink_circle">
+
+                <TextView
+                    android:id="@+id/tvPartnerAvatarLetter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="P"
+                    android:textColor="#FFFFFF"
+                    android:textSize="44sp"
+                    android:textStyle="bold" />
+            </FrameLayout>
+
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivPartnerProfile"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:padding="6dp"
                 android:scaleType="centerCrop"
-                android:src="@drawable/ic_menu_gallery_boy"
+                android:visibility="invisible"
                 app:shapeAppearanceOverlay="@style/CircleImage"
                 app:strokeColor="#FF4D6D"
                 app:strokeWidth="4dp" />

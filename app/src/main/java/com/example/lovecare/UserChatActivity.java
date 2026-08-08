@@ -282,11 +282,75 @@ public class UserChatActivity extends AppCompatActivity {
 
     private void setupNotificationList() {
         notificationList = new ArrayList<>();
-        notificationList.add(new NotificationItem("System", "Welcome to the messaging module!", "1h ago", R.drawable.ic_bell));
-
         notificationAdapter = new NotificationAdapter(this, notificationList);
         rvNotifications.setLayoutManager(new LinearLayoutManager(this));
         rvNotifications.setAdapter(notificationAdapter);
+
+        // Load real notifications from Firestore
+        String myUid = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : "";
+        if (myUid.isEmpty()) return;
+
+        FirebaseFirestore.getInstance().collection("notifications")
+                .whereEqualTo("toUid", myUid)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    notificationList.clear();
+
+                    // Sort by timestamp descending
+                    java.util.List<com.google.firebase.firestore.DocumentSnapshot> docs =
+                            new java.util.ArrayList<>(querySnapshot.getDocuments());
+                    docs.sort((a, b) -> {
+                        Long tsA = a.getLong("timestamp");
+                        Long tsB = b.getLong("timestamp");
+                        if (tsA == null) tsA = 0L;
+                        if (tsB == null) tsB = 0L;
+                        return Long.compare(tsB, tsA);
+                    });
+
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : docs) {
+                        String fromName = doc.getString("fromName");
+                        String message = doc.getString("message");
+                        String type = doc.getString("type");
+                        String fromUid = doc.getString("fromUid");
+                        Long timestamp = doc.getLong("timestamp");
+
+                        if (fromName == null) fromName = "System";
+                        if (message == null) message = "New notification";
+
+                        String timeAgo = getTimeAgo(timestamp != null ? timestamp : 0L);
+                        int icon = R.drawable.ic_heart;
+                        if ("mutual_like_blocked".equals(type)) {
+                            icon = R.drawable.ic_bell;
+                        }
+
+                        notificationList.add(new NotificationItem(fromName, message, timeAgo, icon, type, fromUid));
+                    }
+
+                    if (notificationList.isEmpty()) {
+                        notificationList.add(new NotificationItem("System", "No notifications yet. Start swiping! 💕", "now", R.drawable.ic_bell));
+                    }
+
+                    notificationAdapter.notifyDataSetChanged();
+                })
+                .addOnFailureListener(e -> {
+                    notificationList.clear();
+                    notificationList.add(new NotificationItem("System", "Welcome to the messaging module!", "now", R.drawable.ic_bell));
+                    notificationAdapter.notifyDataSetChanged();
+                });
+    }
+
+    private String getTimeAgo(long timestamp) {
+        if (timestamp == 0) return "now";
+        long diff = System.currentTimeMillis() - timestamp;
+        long minutes = diff / (1000 * 60);
+        long hours = diff / (1000 * 60 * 60);
+        long days = diff / (1000 * 60 * 60 * 24);
+
+        if (minutes < 1) return "just now";
+        if (minutes < 60) return minutes + "m ago";
+        if (hours < 24) return hours + "h ago";
+        if (days < 7) return days + "d ago";
+        return days / 7 + "w ago";
     }
 
     private void setupSearch() {
@@ -317,7 +381,9 @@ public class UserChatActivity extends AppCompatActivity {
             if (itemId == R.id.nav_chat) {
                 return true;
             } else if (itemId == R.id.nav_swipe) {
-                intent = new Intent(this, NavigationBar.class);
+                intent = new Intent(this, HomeActivity.class);
+            } else if (itemId == R.id.nav_starred) {
+                intent = new Intent(this, StarredActivity.class);
             } else if (itemId == R.id.nav_likes) {
                 intent = new Intent(this, LoveSpaceActivity.class);
             } else if (itemId == R.id.nav_profile) {
