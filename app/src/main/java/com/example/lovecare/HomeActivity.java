@@ -12,6 +12,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -50,12 +51,12 @@ public class HomeActivity extends AppCompatActivity {
 
     private FloatingActionButton btnUndo, btnSuperLike, btnLike, btnMessage;
 
-
-
-
     // ── State ─────────────────────────────────────────────────────────────────
     private List<DocumentSnapshot> suggestedUsers = new ArrayList<>();
     private int currentIndex = 0;
+
+    // ── Like priority: UIDs of users who have liked the current user ──────────
+    private Set<String> usersWhoLikedMe = new HashSet<>();
 
     // ── Firebase ──────────────────────────────────────────────────────────────
     private FirebaseAuth mAuth;
@@ -84,7 +85,7 @@ public class HomeActivity extends AppCompatActivity {
             finish();
             return;
         }
-        db    = FirebaseFirestore.getInstance();
+        db = FirebaseFirestore.getInstance();
 
         // Bind views
         ivProfileImage  = findViewById(R.id.ivProfileImage);
@@ -108,9 +109,6 @@ public class HomeActivity extends AppCompatActivity {
         btnLike      = findViewById(R.id.btnLike);
         btnMessage   = findViewById(R.id.btnMessage);
 
-
-
-
         // Wire up bottom navigation
         setupBottomNav();
 
@@ -123,7 +121,6 @@ public class HomeActivity extends AppCompatActivity {
         setupActionButtons();
         loadSuggestedUsers();
     }
-
 
     // ── Bottom Navigation ─────────────────────────────────────────────────────
 
@@ -160,96 +157,119 @@ public class HomeActivity extends AppCompatActivity {
             return;
         }
 
-        // 1. Fetch already swiped user UIDs to filter suggestions
+        // 1. Fetch users who have liked/superliked the current user (for priority)
         db.collection("swipes")
-                .whereEqualTo("fromUid", currentUid)
+                .whereEqualTo("toUid", currentUid)
                 .get()
-                .addOnSuccessListener(swipesSnapshot -> {
-                    java.util.HashSet<String> swipedUids = new java.util.HashSet<>();
-                    for (DocumentSnapshot swipeDoc : swipesSnapshot.getDocuments()) {
-                        String toUid = swipeDoc.getString("toUid");
-                        if (toUid != null) {
-                            swipedUids.add(toUid);
+                .addOnSuccessListener(incomingLikesSnapshot -> {
+                    usersWhoLikedMe.clear();
+                    for (DocumentSnapshot likeDoc : incomingLikesSnapshot.getDocuments()) {
+                        String action = likeDoc.getString("action");
+                        if ("like".equals(action) || "superlike".equals(action)) {
+                            String fromUid = likeDoc.getString("fromUid");
+                            if (fromUid != null) {
+                                usersWhoLikedMe.add(fromUid);
+                            }
                         }
                     }
 
-                    // 2. Fetch current logged-in user's profile details to calculate match scores
-                    db.collection("users").document(currentUid).get()
-                            .addOnSuccessListener(currentUserDoc -> {
-                                // 3. Fetch all users from Firestore
-                                db.collection("users")
-                                        .get()
-                                        .addOnSuccessListener(usersSnapshot -> {
-                                            List<UserWithScore> scoredUsers = new ArrayList<>();
+                    // 2. Fetch already swiped user UIDs to filter suggestions
+                    db.collection("swipes")
+                            .whereEqualTo("fromUid", currentUid)
+                            .get()
+                            .addOnSuccessListener(swipesSnapshot -> {
+                                HashSet<String> swipedUids = new HashSet<>();
+                                for (DocumentSnapshot swipeDoc : swipesSnapshot.getDocuments()) {
+                                    String toUid = swipeDoc.getString("toUid");
+                                    if (toUid != null) {
+                                        swipedUids.add(toUid);
+                                    }
+                                }
 
-                                            for (DocumentSnapshot doc : usersSnapshot.getDocuments()) {
-                                                String docId = doc.getId();
+                                // 3. Fetch current logged-in user's profile details to calculate match scores
+                                db.collection("users").document(currentUid).get()
+                                        .addOnSuccessListener(currentUserDoc -> {
+                                            // 4. Fetch all users from Firestore
+                                            db.collection("users")
+                                                    .get()
+                                                    .addOnSuccessListener(usersSnapshot -> {
+                                                        List<UserWithScore> scoredUsers = new ArrayList<>();
 
-                                                // Exclude already swiped profiles
-                                                if (swipedUids.contains(docId)) continue;
+                                                        for (DocumentSnapshot doc : usersSnapshot.getDocuments()) {
+                                                            String docId = doc.getId();
 
-                                                // Exclude current user (logged-in user)
-                                                if (docId.equalsIgnoreCase(currentUid)) continue;
+                                                            // Exclude already swiped profiles
+                                                            if (swipedUids.contains(docId)) continue;
 
-                                                // Exclude admin role
-                                                String role = doc.getString("role");
-                                                if ("admin".equalsIgnoreCase(role)) continue;
+                                                            // Exclude current user (logged-in user)
+                                                            if (docId.equalsIgnoreCase(currentUid)) continue;
 
-                                                // Calculate match score
-                                                int score = calculateMatchScore(currentUserDoc, doc);
-                                                scoredUsers.add(new UserWithScore(doc, score));
-                                            }
+                                                            // Exclude admin role
+                                                            String role = doc.getString("role");
+                                                            if ("admin".equalsIgnoreCase(role)) continue;
 
-                                            // Sort in descending order of match score
-                                            Collections.sort(scoredUsers, new Comparator<UserWithScore>() {
-                                                @Override
-                                                public int compare(UserWithScore u1, UserWithScore u2) {
-                                                    return Integer.compare(u2.score, u1.score);
-                                                }
-                                            });
+                                                            // Calculate match score
+                                                            int score = calculateMatchScore(currentUserDoc, doc);
 
-                                            // Populate suggestedUsers list
-                                            suggestedUsers.clear();
-                                            for (UserWithScore u : scoredUsers) {
-                                                suggestedUsers.add(u.doc);
-                                            }
+                                                            // ★ Like priority boost: users who liked me appear first
+                                                            if (usersWhoLikedMe.contains(docId)) {
+                                                                score += 1000;
+                                                            }
 
-                                            pbLoading.setVisibility(View.GONE);
+                                                            scoredUsers.add(new UserWithScore(doc, score));
+                                                        }
 
-                                            if (suggestedUsers.isEmpty()) {
-                                                showEmptyState();
-                                            } else {
-                                                currentIndex = 0;
-                                                setProfileVisible(true);
-                                                displayUser(suggestedUsers.get(0));
-                                            }
+                                                        // Sort in descending order of match score
+                                                        Collections.sort(scoredUsers, (u1, u2) ->
+                                                                Integer.compare(u2.score, u1.score));
+
+                                                        // Populate suggestedUsers list
+                                                        suggestedUsers.clear();
+                                                        for (UserWithScore u : scoredUsers) {
+                                                            suggestedUsers.add(u.doc);
+                                                        }
+
+                                                        pbLoading.setVisibility(View.GONE);
+
+                                                        if (suggestedUsers.isEmpty()) {
+                                                            showEmptyState();
+                                                        } else {
+                                                            currentIndex = 0;
+                                                            setProfileVisible(true);
+                                                            displayUser(suggestedUsers.get(0));
+                                                        }
+                                                    })
+                                                    .addOnFailureListener(e -> {
+                                                        android.util.Log.e("HomeActivity", "Failed to fetch users: " + e.getMessage(), e);
+                                                        pbLoading.setVisibility(View.GONE);
+                                                        showEmptyState();
+                                                    });
                                         })
                                         .addOnFailureListener(e -> {
-                                            android.util.Log.e("HomeActivity", "Failed to fetch users: " + e.getMessage(), e);
+                                            android.util.Log.e("HomeActivity", "Failed to fetch currentUserDoc: " + e.getMessage(), e);
                                             pbLoading.setVisibility(View.GONE);
                                             showEmptyState();
                                         });
                             })
                             .addOnFailureListener(e -> {
-                                android.util.Log.e("HomeActivity", "Failed to fetch currentUserDoc: " + e.getMessage(), e);
+                                android.util.Log.e("HomeActivity", "Failed to fetch swipes: " + e.getMessage(), e);
                                 pbLoading.setVisibility(View.GONE);
                                 showEmptyState();
                             });
                 })
                 .addOnFailureListener(e -> {
-                    android.util.Log.e("HomeActivity", "Failed to fetch swipes: " + e.getMessage(), e);
+                    android.util.Log.e("HomeActivity", "Failed to fetch incoming likes: " + e.getMessage(), e);
                     pbLoading.setVisibility(View.GONE);
                     showEmptyState();
                 });
     }
-
 
     // ── Questionnaire Match Scoring ──────────────────────────────────────────
 
     private int calculateMatchScore(DocumentSnapshot current, DocumentSnapshot other) {
         int score = 0;
 
-        // Gender & Looking For Alignment (Crucial dating compatibility)
+        // Gender & Looking For Alignment
         String myGender = current.getString("gender");
         String myLookingFor = current.getString("lookingFor");
         String otherGender = other.getString("gender");
@@ -259,7 +279,7 @@ public class HomeActivity extends AppCompatActivity {
             if (myLookingFor.equalsIgnoreCase("Both") || myLookingFor.equalsIgnoreCase(otherGender)) {
                 score += 15;
             } else {
-                score -= 30; // Mismatch on gender preference
+                score -= 30;
             }
         }
         if (otherLookingFor != null && myGender != null) {
@@ -270,63 +290,47 @@ public class HomeActivity extends AppCompatActivity {
             }
         }
 
-        // Goal Match (e.g. both want Relationship/Marriage vs. Chatting/Travel)
+        // Goal Match
         String myGoal = current.getString("goal");
         String otherGoal = other.getString("goal");
-        if (myGoal != null && myGoal.equalsIgnoreCase(otherGoal)) {
-            score += 10;
-        }
+        if (myGoal != null && myGoal.equalsIgnoreCase(otherGoal)) score += 10;
 
         // Religion Match
         String myReligion = current.getString("religion");
         String otherReligion = other.getString("religion");
-        if (myReligion != null && myReligion.equalsIgnoreCase(otherReligion)) {
-            score += 8;
-        }
+        if (myReligion != null && myReligion.equalsIgnoreCase(otherReligion)) score += 8;
 
         // Sexual Orientation Match
         String myOrientation = current.getString("orientation");
         String otherOrientation = other.getString("orientation");
-        if (myOrientation != null && myOrientation.equalsIgnoreCase(otherOrientation)) {
-            score += 5;
-        }
+        if (myOrientation != null && myOrientation.equalsIgnoreCase(otherOrientation)) score += 5;
 
         // Most Important Life Aspect Match
         String myImp = current.getString("mostImportant");
         String otherImp = other.getString("mostImportant");
-        if (myImp != null && myImp.equalsIgnoreCase(otherImp)) {
-            score += 7;
-        }
+        if (myImp != null && myImp.equalsIgnoreCase(otherImp)) score += 7;
 
         // Lifestyle Match (Smoke)
         String mySmoke = current.getString("smoke");
         String otherSmoke = other.getString("smoke");
-        if (mySmoke != null && mySmoke.equalsIgnoreCase(otherSmoke)) {
-            score += 4;
-        }
+        if (mySmoke != null && mySmoke.equalsIgnoreCase(otherSmoke)) score += 4;
 
         // Lifestyle Match (Drink)
         String myDrink = current.getString("drink");
         String otherDrink = other.getString("drink");
-        if (myDrink != null && myDrink.equalsIgnoreCase(otherDrink)) {
-            score += 4;
-        }
+        if (myDrink != null && myDrink.equalsIgnoreCase(otherDrink)) score += 4;
 
         // Education Match
         String myEdu = current.getString("education");
         String otherEdu = other.getString("education");
-        if (myEdu != null && myEdu.equalsIgnoreCase(otherEdu)) {
-            score += 3;
-        }
+        if (myEdu != null && myEdu.equalsIgnoreCase(otherEdu)) score += 3;
 
         // Star Sign Match
         String mySign = current.getString("starSign");
         String otherSign = other.getString("starSign");
-        if (mySign != null && mySign.equalsIgnoreCase(otherSign)) {
-            score += 2;
-        }
+        if (mySign != null && mySign.equalsIgnoreCase(otherSign)) score += 2;
 
-        // Age Compatibility (within 5 years is prioritized)
+        // Age Compatibility
         String myAgeStr = current.getString("age");
         String otherAgeStr = other.getString("age");
         if (myAgeStr != null && otherAgeStr != null) {
@@ -334,16 +338,10 @@ public class HomeActivity extends AppCompatActivity {
                 int myAge = Integer.parseInt(myAgeStr.trim());
                 int otherAge = Integer.parseInt(otherAgeStr.trim());
                 int ageDiff = Math.abs(myAge - otherAge);
-                if (ageDiff <= 3) {
-                    score += 12;
-                } else if (ageDiff <= 5) {
-                    score += 8;
-                } else if (ageDiff <= 8) {
-                    score += 4;
-                }
-            } catch (Exception e) {
-                // ignore parsing exceptions
-            }
+                if (ageDiff <= 3) score += 12;
+                else if (ageDiff <= 5) score += 8;
+                else if (ageDiff <= 8) score += 4;
+            } catch (Exception e) { /* ignore */ }
         }
 
         return score;
@@ -352,12 +350,10 @@ public class HomeActivity extends AppCompatActivity {
     // ── Display ───────────────────────────────────────────────────────────────
 
     private void displayUser(DocumentSnapshot user) {
-        // Name
         String name = user.getString("name");
         if (name == null || name.isEmpty()) name = "Anonymous";
         tvNameAge.setText("Name : " + name);
 
-        // Populate dynamic specs tags with visibility toggle
         String age         = user.getString("age");
         String orientation = user.getString("orientation");
         String height      = user.getString("height");
@@ -391,17 +387,12 @@ public class HomeActivity extends AppCompatActivity {
             tvWeightChip.setVisibility(View.GONE);
         }
 
-
-
-        // Show active badge
         tvActiveBadge.setVisibility(View.VISIBLE);
 
-        // Profile photo / Letter avatar
         String photoUrl = user.getString("photoUrl");
         if (photoUrl == null || photoUrl.isEmpty()) photoUrl = user.getString("photo");
 
         if (photoUrl != null && !photoUrl.isEmpty() && photoUrl.startsWith("http")) {
-            // Instantly show letter avatar while downloading real image to hide network latency
             flLetterAvatar.setVisibility(View.VISIBLE);
             ivProfileImage.setVisibility(View.INVISIBLE);
             char firstLetter = name.trim().length() > 0 ? Character.toUpperCase(name.trim().charAt(0)) : '?';
@@ -412,18 +403,18 @@ public class HomeActivity extends AppCompatActivity {
                     .centerCrop()
                     .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
                         @Override
-                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e, 
-                                                    Object model, 
-                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, 
+                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
+                                                    Object model,
+                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
                                                     boolean isFirstResource) {
                             return false;
                         }
 
                         @Override
-                        public boolean onResourceReady(android.graphics.drawable.Drawable resource, 
-                                                       Object model, 
-                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, 
-                                                       com.bumptech.glide.load.DataSource dataSource, 
+                        public boolean onResourceReady(android.graphics.drawable.Drawable resource,
+                                                       Object model,
+                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                       com.bumptech.glide.load.DataSource dataSource,
                                                        boolean isFirstResource) {
                             flLetterAvatar.setVisibility(View.GONE);
                             ivProfileImage.setVisibility(View.VISIBLE);
@@ -432,14 +423,12 @@ public class HomeActivity extends AppCompatActivity {
                     })
                     .into(ivProfileImage);
         } else {
-            // fallback text-based letter avatar
             ivProfileImage.setVisibility(View.GONE);
             flLetterAvatar.setVisibility(View.VISIBLE);
             char firstLetter = name.trim().length() > 0 ? Character.toUpperCase(name.trim().charAt(0)) : '?';
             tvAvatarLetter.setText(String.valueOf(firstLetter));
         }
     }
-
 
     private void advanceToNextUser() {
         if (suggestedUsers.isEmpty()) {
@@ -475,19 +464,17 @@ public class HomeActivity extends AppCompatActivity {
 
     private void setupActionButtons() {
 
-        // ← Back/Undo: go to previous user
         btnUndo.setOnClickListener(v -> {
             applyClickEffect(v);
             if (!suggestedUsers.isEmpty() && currentIndex > 0) {
                 currentIndex--;
-                setProfileVisible(true); // Restore profile layout and hide empty state
+                setProfileVisible(true);
                 displayUser(suggestedUsers.get(currentIndex));
             } else {
                 Toast.makeText(this, "No previous profiles", Toast.LENGTH_SHORT).show();
             }
         });
 
-        // ⭐ Super Like
         btnSuperLike.setOnClickListener(v -> {
             applyClickEffect(v);
             recordSwipe("superlike");
@@ -495,7 +482,6 @@ public class HomeActivity extends AppCompatActivity {
             Toast.makeText(this, "Super Liked! ⭐", Toast.LENGTH_SHORT).show();
         });
 
-        // ♥ Like
         btnLike.setOnClickListener(v -> {
             applyClickEffect(v);
             showHeartPopEffect();
@@ -504,7 +490,6 @@ public class HomeActivity extends AppCompatActivity {
             Toast.makeText(this, "Liked! 💚", Toast.LENGTH_SHORT).show();
         });
 
-        // ✉ Message — open chat directly with this user
         btnMessage.setOnClickListener(v -> {
             applyClickEffect(v);
             if (!suggestedUsers.isEmpty() && currentIndex < suggestedUsers.size()) {
@@ -521,8 +506,7 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
-
-    // ── Swipe recording ───────────────────────────────────────────────────────
+    // ── Swipe recording + Mutual Like Detection ──────────────────────────────
 
     private void recordSwipe(String action) {
         if (suggestedUsers.isEmpty() || currentIndex >= suggestedUsers.size()) return;
@@ -536,6 +520,201 @@ public class HomeActivity extends AppCompatActivity {
         data.put("toUid",     targetUid);
         data.put("timestamp", System.currentTimeMillis());
         db.collection("swipes").add(data);
+
+        // ── Mutual Like Detection ──────────────────────────────────────
+        if (usersWhoLikedMe.contains(targetUid)) {
+            checkAndCreateLoveSpace(myUid, targetUid);
+        }
+    }
+
+    /**
+     * Check if the current user already has an active LoveSpace.
+     * If not, create one with the matched user.
+     * If yes, save a notification instead.
+     */
+    private void checkAndCreateLoveSpace(String myUid, String matchedUid) {
+        db.collection("lovespaces")
+                .whereEqualTo("user1Uid", myUid)
+                .whereEqualTo("active", true)
+                .get()
+                .addOnSuccessListener(snap1 -> {
+                    if (!snap1.isEmpty()) {
+                        saveMutualLikeNotification(myUid, matchedUid);
+                        return;
+                    }
+                    db.collection("lovespaces")
+                            .whereEqualTo("user2Uid", myUid)
+                            .whereEqualTo("active", true)
+                            .get()
+                            .addOnSuccessListener(snap2 -> {
+                                if (!snap2.isEmpty()) {
+                                    saveMutualLikeNotification(myUid, matchedUid);
+                                } else {
+                                    checkMatchedUserLoveSpace(myUid, matchedUid);
+                                }
+                            });
+                });
+    }
+
+    /**
+     * Check if the matched user also has an active LoveSpace.
+     * If not, create the LoveSpace. If yes, save notification to the correct person.
+     */
+    private void checkMatchedUserLoveSpace(String myUid, String matchedUid) {
+        db.collection("lovespaces")
+                .whereEqualTo("user1Uid", matchedUid)
+                .whereEqualTo("active", true)
+                .get()
+                .addOnSuccessListener(snap1 -> {
+                    if (!snap1.isEmpty()) {
+                        // matchedUid has the active LoveSpace — notify THEM, not me
+                        saveBlockedNotificationForBoth(myUid, matchedUid);
+                        return;
+                    }
+                    db.collection("lovespaces")
+                            .whereEqualTo("user2Uid", matchedUid)
+                            .whereEqualTo("active", true)
+                            .get()
+                            .addOnSuccessListener(snap2 -> {
+                                if (!snap2.isEmpty()) {
+                                    // matchedUid has the active LoveSpace — notify THEM, not me
+                                    saveBlockedNotificationForBoth(myUid, matchedUid);
+                                } else {
+                                    createLoveSpace(myUid, matchedUid);
+                                }
+                            });
+                });
+    }
+
+    /**
+     * Create a new LoveSpace document and show the match celebration dialog.
+     */
+    private void createLoveSpace(String myUid, String matchedUid) {
+        Map<String, Object> loveSpace = new HashMap<>();
+        loveSpace.put("user1Uid", myUid);
+        loveSpace.put("user2Uid", matchedUid);
+        loveSpace.put("createdAt", System.currentTimeMillis());
+        loveSpace.put("active", true);
+
+        db.collection("lovespaces").add(loveSpace)
+                .addOnSuccessListener(ref -> {
+                    db.collection("users").document(matchedUid).get()
+                            .addOnSuccessListener(userDoc -> {
+                                String matchName = "Someone";
+                                if (userDoc.exists()) {
+                                    String name = userDoc.getString("name");
+                                    if (name != null && !name.isEmpty()) matchName = name;
+                                }
+                                showMatchDialog(matchName);
+                            })
+                            .addOnFailureListener(e -> showMatchDialog("Someone"));
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to create LoveSpace", Toast.LENGTH_SHORT).show());
+    }
+
+    /**
+     * Show a "It's a Match!" celebration dialog.
+     */
+    private void showMatchDialog(String matchName) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("💕 It's a Match!");
+        builder.setMessage("You and " + matchName + " liked each other!\nYour LoveSpace has been created. 🎉");
+        builder.setCancelable(false);
+        builder.setPositiveButton("Go to LoveSpace", (dialog, which) -> {
+            dialog.dismiss();
+            startActivity(new Intent(this, LoveSpaceActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+        });
+        builder.setNegativeButton("Keep Swiping", (dialog, which) -> dialog.dismiss());
+        builder.show();
+    }
+
+    /**
+     * Save a notification when the CURRENT USER (myUid) has the active LoveSpace.
+     * Notification goes to myUid telling them they matched but already have a LoveSpace.
+     */
+    private void saveMutualLikeNotification(String myUid, String matchedUid) {
+        db.collection("users").document(matchedUid).get()
+                .addOnSuccessListener(userDoc -> {
+                    String matchName = "Someone";
+                    if (userDoc.exists()) {
+                        String name = userDoc.getString("name");
+                        if (name != null && !name.isEmpty()) matchName = name;
+                    }
+
+                    // Notification for current user (who has the LoveSpace)
+                    Map<String, Object> notif = new HashMap<>();
+                    notif.put("toUid", myUid);
+                    notif.put("fromUid", matchedUid);
+                    notif.put("fromName", matchName);
+                    notif.put("type", "mutual_like_blocked");
+                    notif.put("message", "You and " + matchName + " liked each other! 💕 But you already have an active LoveSpace.");
+                    notif.put("timestamp", System.currentTimeMillis());
+                    notif.put("read", false);
+                    db.collection("notifications").add(notif);
+
+                    Toast.makeText(this,
+                            "Mutual match with " + matchName + "! 💕\nBut you already have an active LoveSpace.",
+                            Toast.LENGTH_LONG).show();
+                });
+    }
+
+    /**
+     * Save notifications when the MATCHED USER (matchedUid) has the active LoveSpace,
+     * but the current user (myUid) does NOT.
+     * - matchedUid gets: "You and X liked each other! But you already have an active LoveSpace."
+     * - myUid gets: "You and Y liked each other! But Y already has an active LoveSpace."
+     */
+    private void saveBlockedNotificationForBoth(String myUid, String matchedUid) {
+        // Get both user names
+        db.collection("users").document(matchedUid).get()
+                .addOnSuccessListener(matchedDoc -> {
+                    String matchedName = "Someone";
+                    if (matchedDoc.exists()) {
+                        String name = matchedDoc.getString("name");
+                        if (name != null && !name.isEmpty()) matchedName = name;
+                    }
+
+                    final String finalMatchedName = matchedName;
+
+                    db.collection("users").document(myUid).get()
+                            .addOnSuccessListener(myDoc -> {
+                                String myName = "Someone";
+                                if (myDoc.exists()) {
+                                    String name = myDoc.getString("name");
+                                    if (name != null && !name.isEmpty()) myName = name;
+                                }
+
+                                long now = System.currentTimeMillis();
+
+                                // Notification for the MATCHED user (who has the active LoveSpace)
+                                Map<String, Object> notifForMatched = new HashMap<>();
+                                notifForMatched.put("toUid", matchedUid);
+                                notifForMatched.put("fromUid", myUid);
+                                notifForMatched.put("fromName", myName);
+                                notifForMatched.put("type", "mutual_like_blocked");
+                                notifForMatched.put("message", "You and " + myName + " liked each other! 💕 But you already have an active LoveSpace.");
+                                notifForMatched.put("timestamp", now);
+                                notifForMatched.put("read", false);
+                                db.collection("notifications").add(notifForMatched);
+
+                                // Notification for the CURRENT user (who does NOT have a LoveSpace)
+                                Map<String, Object> notifForMe = new HashMap<>();
+                                notifForMe.put("toUid", myUid);
+                                notifForMe.put("fromUid", matchedUid);
+                                notifForMe.put("fromName", finalMatchedName);
+                                notifForMe.put("type", "mutual_like_blocked");
+                                notifForMe.put("message", "You and " + finalMatchedName + " liked each other! 💕 But " + finalMatchedName + " already has an active LoveSpace.");
+                                notifForMe.put("timestamp", now);
+                                notifForMe.put("read", false);
+                                db.collection("notifications").add(notifForMe);
+
+                                Toast.makeText(this,
+                                        "Mutual match with " + finalMatchedName + "! 💕\nBut " + finalMatchedName + " already has an active LoveSpace.",
+                                        Toast.LENGTH_LONG).show();
+                            });
+                });
     }
 
     // ── Animations ────────────────────────────────────────────────────────────
@@ -583,10 +762,8 @@ public class HomeActivity extends AppCompatActivity {
                 if (Math.abs(diffX) > Math.abs(diffY)) {
                     if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                         if (diffX > 0) {
-                            // Swipe Right -> Show Previous User
                             onSwipeRight();
                         } else {
-                            // Swipe Left -> Show Next User
                             onSwipeLeft();
                         }
                         return true;
@@ -606,10 +783,9 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void onSwipeRight() {
-        // Go back to previous user (navigation only — no likes registered)
         if (!suggestedUsers.isEmpty() && currentIndex > 0) {
             currentIndex--;
-            setProfileVisible(true); // Restore profile layout and hide empty state
+            setProfileVisible(true);
             displayUser(suggestedUsers.get(currentIndex));
         } else {
             Toast.makeText(this, "No previous profiles", Toast.LENGTH_SHORT).show();
@@ -617,7 +793,6 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void onSwipeLeft() {
-        // Advance to next user (navigation only — no dislikes registered)
         if (!suggestedUsers.isEmpty()) {
             currentIndex++;
             if (currentIndex >= suggestedUsers.size()) {
@@ -627,7 +802,6 @@ public class HomeActivity extends AppCompatActivity {
             }
         }
     }
-
 
     // ── Helper Class for scoring ──────────────────────────────────────────────
 
@@ -641,4 +815,3 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 }
-
