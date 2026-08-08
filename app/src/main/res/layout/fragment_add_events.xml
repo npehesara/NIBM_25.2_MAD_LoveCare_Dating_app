@@ -27,10 +27,42 @@
             android:textColor="@color/text_grey"
             android:textSize="14sp" />
 
+        <!-- Announcements Count / Info -->
+        <TextView
+            android:id="@+id/tv_announcement_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"
+            android:textColor="@color/text_grey"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
+        <!-- Announcement List -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_announcements"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingBottom="80dp" />
+
+        <!-- Loading Indicator -->
+        <ProgressBar
+            android:id="@+id/progress_bar_announcements"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminateTint="@color/primary_pink"
+            android:visibility="gone" />
+
+        <!-- Empty State -->
         <androidx.cardview.widget.CardView
+            android:id="@+id/card_empty_announcements"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="30dp"
+            android:visibility="gone"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
 
@@ -45,7 +77,7 @@
                     android:layout_width="60dp"
                     android:layout_height="60dp"
                     android:contentDescription="@string/add_events_title"
-                    android:src="@drawable/ic_event"
+                    android:src="@drawable/ic_bell"
                     app:tint="@color/primary_pink" />
 
                 <TextView

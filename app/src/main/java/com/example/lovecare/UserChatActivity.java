@@ -286,57 +286,99 @@ public class UserChatActivity extends AppCompatActivity {
         rvNotifications.setLayoutManager(new LinearLayoutManager(this));
         rvNotifications.setAdapter(notificationAdapter);
 
-        // Load real notifications from Firestore
         String myUid = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : "";
         if (myUid.isEmpty()) return;
 
-        FirebaseFirestore.getInstance().collection("notifications")
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("notifications")
                 .whereEqualTo("toUid", myUid)
                 .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    notificationList.clear();
-
-                    // Sort by timestamp descending
-                    java.util.List<com.google.firebase.firestore.DocumentSnapshot> docs =
-                            new java.util.ArrayList<>(querySnapshot.getDocuments());
-                    docs.sort((a, b) -> {
-                        Long tsA = a.getLong("timestamp");
-                        Long tsB = b.getLong("timestamp");
-                        if (tsA == null) tsA = 0L;
-                        if (tsB == null) tsB = 0L;
-                        return Long.compare(tsB, tsA);
-                    });
-
-                    for (com.google.firebase.firestore.DocumentSnapshot doc : docs) {
-                        String fromName = doc.getString("fromName");
-                        String message = doc.getString("message");
-                        String type = doc.getString("type");
-                        String fromUid = doc.getString("fromUid");
-                        Long timestamp = doc.getLong("timestamp");
-
-                        if (fromName == null) fromName = "System";
-                        if (message == null) message = "New notification";
-
-                        String timeAgo = getTimeAgo(timestamp != null ? timestamp : 0L);
-                        int icon = R.drawable.ic_heart;
-                        if ("mutual_like_blocked".equals(type)) {
-                            icon = R.drawable.ic_bell;
-                        }
-
-                        notificationList.add(new NotificationItem(fromName, message, timeAgo, icon, type, fromUid));
-                    }
-
-                    if (notificationList.isEmpty()) {
-                        notificationList.add(new NotificationItem("System", "No notifications yet. Start swiping! 💕", "now", R.drawable.ic_bell));
-                    }
-
-                    notificationAdapter.notifyDataSetChanged();
+                .addOnSuccessListener(notifSnap -> {
+                    db.collection("announcements")
+                            .get()
+                            .addOnSuccessListener(announcementSnap -> {
+                                processAndMergeNotifications(notifSnap, announcementSnap);
+                            })
+                            .addOnFailureListener(e -> processAndMergeNotifications(notifSnap, null));
                 })
                 .addOnFailureListener(e -> {
-                    notificationList.clear();
-                    notificationList.add(new NotificationItem("System", "Welcome to the messaging module!", "now", R.drawable.ic_bell));
-                    notificationAdapter.notifyDataSetChanged();
+                    db.collection("announcements")
+                            .get()
+                            .addOnSuccessListener(announcementSnap -> processAndMergeNotifications(null, announcementSnap))
+                            .addOnFailureListener(e1 -> {
+                                notificationList.clear();
+                                notificationList.add(new NotificationItem("System", "Welcome to the messaging module!", "now", R.drawable.ic_bell));
+                                notificationAdapter.notifyDataSetChanged();
+                            });
                 });
+    }
+
+    private void processAndMergeNotifications(
+            com.google.firebase.firestore.QuerySnapshot notifSnap,
+            com.google.firebase.firestore.QuerySnapshot announcementSnap) {
+
+        class TempNotif {
+            final NotificationItem item;
+            final long ts;
+            TempNotif(NotificationItem item, long ts) {
+                this.item = item;
+                this.ts = ts;
+            }
+        }
+
+        List<TempNotif> mergedList = new ArrayList<>();
+
+        if (notifSnap != null) {
+            for (com.google.firebase.firestore.DocumentSnapshot doc : notifSnap.getDocuments()) {
+                String fromName = doc.getString("fromName");
+                String message = doc.getString("message");
+                String type = doc.getString("type");
+                String fromUid = doc.getString("fromUid");
+                Long timestamp = doc.getLong("timestamp");
+                long ts = timestamp != null ? timestamp : 0L;
+
+                if (fromName == null) fromName = "System";
+                if (message == null) message = "New notification";
+
+                String timeAgo = getTimeAgo(ts);
+                int icon = R.drawable.ic_heart;
+                if ("mutual_like_blocked".equals(type)) {
+                    icon = R.drawable.ic_bell;
+                }
+
+                mergedList.add(new TempNotif(new NotificationItem(fromName, message, timeAgo, icon, type, fromUid), ts));
+            }
+        }
+
+        if (announcementSnap != null) {
+            for (com.google.firebase.firestore.DocumentSnapshot doc : announcementSnap.getDocuments()) {
+                String title = doc.getString("title");
+                String message = doc.getString("message");
+                Long createdAt = doc.getLong("createdAt");
+                long ts = createdAt != null ? createdAt : 0L;
+
+                if (title == null) title = "📢 Announcement";
+                else title = "📢 " + title;
+                if (message == null) message = "";
+
+                String timeAgo = getTimeAgo(ts);
+                mergedList.add(new TempNotif(new NotificationItem(title, message, timeAgo, R.drawable.ic_bell, "announcement", null), ts));
+            }
+        }
+
+        mergedList.sort((a, b) -> Long.compare(b.ts, a.ts));
+
+        notificationList.clear();
+        for (TempNotif t : mergedList) {
+            notificationList.add(t.item);
+        }
+
+        if (notificationList.isEmpty()) {
+            notificationList.add(new NotificationItem("System", "No notifications yet. Start swiping! 💕", "now", R.drawable.ic_bell));
+        }
+
+        notificationAdapter.notifyDataSetChanged();
     }
 
     private String getTimeAgo(long timestamp) {
