@@ -106,6 +106,9 @@ public class LoveSpaceActivity extends AppCompatActivity {
 
         findViewById(R.id.btnGallery).setOnClickListener(v -> {
             Intent intent = new Intent(LoveSpaceActivity.this, Gallery.class);
+            if (partnerUid != null && !partnerUid.isEmpty()) {
+                intent.putExtra("partnerUid", partnerUid);
+            }
             startActivity(intent);
         });
 
