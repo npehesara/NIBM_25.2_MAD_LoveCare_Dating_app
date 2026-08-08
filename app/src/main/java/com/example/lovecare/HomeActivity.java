@@ -509,10 +509,13 @@ public class HomeActivity extends AppCompatActivity {
             applyClickEffect(v);
             if (!suggestedUsers.isEmpty() && currentIndex < suggestedUsers.size()) {
                 DocumentSnapshot targetUser = suggestedUsers.get(currentIndex);
+                String photoUrl = targetUser.getString("photoUrl");
+                if (photoUrl == null || photoUrl.isEmpty()) photoUrl = targetUser.getString("photo");
+
                 Intent intent = new Intent(this, LoveSpaceMessage.class);
                 intent.putExtra("userId",    targetUser.getId());
                 intent.putExtra("username",  targetUser.getString("name"));
-                intent.putExtra("userPhoto", targetUser.getString("photoUrl"));
+                intent.putExtra("userPhoto", photoUrl);
                 startActivity(intent);
             }
         });

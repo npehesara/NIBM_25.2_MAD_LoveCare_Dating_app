@@ -111,7 +111,21 @@ public class LoveSpaceMessage extends AppCompatActivity {
         if (username != null && !username.isEmpty()) {
             tvChatUsername.setText(username);
         } else {
-            tvChatUsername.setText("Chat Conversation");
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("users").document(partnerUid).get()
+                    .addOnSuccessListener(userDoc -> {
+                        if (userDoc.exists()) {
+                            String name = userDoc.getString("name");
+                            if (name != null && !name.isEmpty()) {
+                                tvChatUsername.setText(name);
+                            } else {
+                                tvChatUsername.setText("Chat Conversation");
+                            }
+                        } else {
+                            tvChatUsername.setText("Chat Conversation");
+                        }
+                    })
+                    .addOnFailureListener(e -> tvChatUsername.setText("Chat Conversation"));
         }
     }
 
@@ -131,6 +145,9 @@ public class LoveSpaceMessage extends AppCompatActivity {
                 for (DataSnapshot msgSnap : snapshot.getChildren()) {
                     String senderId = msgSnap.child("senderId").getValue(String.class);
                     String text = msgSnap.child("messageText").getValue(String.class);
+                    if (text == null) {
+                        text = msgSnap.child("text").getValue(String.class);
+                    }
                     String time = msgSnap.child("time").getValue(String.class);
 
                     if (senderId != null && text != null) {

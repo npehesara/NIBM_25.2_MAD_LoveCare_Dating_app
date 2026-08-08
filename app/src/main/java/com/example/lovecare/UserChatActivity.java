@@ -138,66 +138,105 @@ public class UserChatActivity extends AppCompatActivity {
         chatsRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                final List<ChatItem> tempList = new ArrayList<>();
-                final int[] pendingFetches = {0};
+                List<TempChatInfo> matchingChats = new ArrayList<>();
 
                 for (DataSnapshot chatSnapshot : snapshot.getChildren()) {
                     String chatId = chatSnapshot.getKey();
-                    if (chatId != null && chatId.contains(myUid)) {
+                    if (chatId == null || !chatId.contains("_")) continue;
+
+                    String partnerUid = null;
+                    if (chatId.startsWith(myUid + "_")) {
+                        partnerUid = chatId.substring(myUid.length() + 1);
+                    } else if (chatId.endsWith("_" + myUid)) {
+                        partnerUid = chatId.substring(0, chatId.length() - myUid.length() - 1);
+                    } else {
                         String[] parts = chatId.split("_");
-                        if (parts.length != 2) continue;
-                        String partnerUid = parts[0].equals(myUid) ? parts[1] : parts[0];
-
-                        // Find the last message
-                        DataSnapshot messagesSnapshot = chatSnapshot.child("messages");
-                        String lastMsg = "No messages yet";
-                        String lastTime = "";
-                        long maxTimestamp = -1;
-
-                        for (DataSnapshot msgSnap : messagesSnapshot.getChildren()) {
-                            Long ts = msgSnap.child("timestamp").getValue(Long.class);
-                            if (ts != null && ts > maxTimestamp) {
-                                maxTimestamp = ts;
-                                lastMsg = msgSnap.child("messageText").getValue(String.class);
-                                lastTime = msgSnap.child("time").getValue(String.class);
+                        if (parts.length == 2) {
+                            if (parts[0].equalsIgnoreCase(myUid)) {
+                                partnerUid = parts[1];
+                            } else if (parts[1].equalsIgnoreCase(myUid)) {
+                                partnerUid = parts[0];
                             }
                         }
-
-                        final String finalMsg = lastMsg;
-                        final String finalTime = lastTime;
-                        pendingFetches[0]++;
-
-                        // Fetch details of conversation partner from Firestore
-                        FirebaseFirestore.getInstance().collection("users").document(partnerUid).get()
-                                .addOnSuccessListener(userDoc -> {
-                                    if (userDoc.exists()) {
-                                        String name = userDoc.getString("name");
-                                        String photo = userDoc.getString("photoUrl");
-                                        if (photo == null || photo.isEmpty()) photo = userDoc.getString("photo");
-
-                                        tempList.add(new ChatItem(partnerUid, name != null ? name : "User", finalMsg, finalTime != null ? finalTime : "", photo, 0, true));
-                                    }
-                                    pendingFetches[0]--;
-                                    if (pendingFetches[0] == 0) {
-                                        chatList.clear();
-                                        chatList.addAll(tempList);
-                                        chatAdapter.filter(etSearchUser.getText().toString());
-                                    }
-                                })
-                                .addOnFailureListener(e -> {
-                                    pendingFetches[0]--;
-                                    if (pendingFetches[0] == 0) {
-                                        chatList.clear();
-                                        chatList.addAll(tempList);
-                                        chatAdapter.filter(etSearchUser.getText().toString());
-                                    }
-                                });
                     }
+                    if (partnerUid == null || partnerUid.isEmpty()) continue;
+
+                    DataSnapshot messagesSnapshot = chatSnapshot.hasChild("messages") ?
+                            chatSnapshot.child("messages") : chatSnapshot;
+
+                    String lastMsg = "No messages yet";
+                    String lastTime = "";
+                    long maxTimestamp = -1;
+
+                    for (DataSnapshot msgSnap : messagesSnapshot.getChildren()) {
+                        if ("messages".equals(msgSnap.getKey())) continue;
+
+                        Object tsObj = msgSnap.child("timestamp").getValue();
+                        long ts = -1;
+                        if (tsObj instanceof Number) {
+                            ts = ((Number) tsObj).longValue();
+                        } else if (tsObj instanceof String) {
+                            try { ts = Long.parseLong((String) tsObj); } catch (Exception ignored) {}
+                        }
+
+                        String text = msgSnap.child("messageText").getValue(String.class);
+                        if (text == null) text = msgSnap.child("text").getValue(String.class);
+                        if (text == null) text = msgSnap.child("message").getValue(String.class);
+
+                        String timeStr = msgSnap.child("time").getValue(String.class);
+
+                        if (ts >= maxTimestamp || maxTimestamp == -1) {
+                            if (ts > -1) maxTimestamp = ts;
+                            if (text != null && !text.isEmpty()) lastMsg = text;
+                            if (timeStr != null && !timeStr.isEmpty()) lastTime = timeStr;
+                        }
+                    }
+
+                    matchingChats.add(new TempChatInfo(partnerUid, lastMsg, lastTime, maxTimestamp));
                 }
 
-                if (pendingFetches[0] == 0) {
+                if (matchingChats.isEmpty()) {
                     chatList.clear();
-                    chatAdapter.filter(etSearchUser.getText().toString());
+                    chatAdapter.filter(etSearchUser != null && etSearchUser.getText() != null ? etSearchUser.getText().toString() : "");
+                    return;
+                }
+
+                final List<ChatItemWithTs> tempList = java.util.Collections.synchronizedList(new ArrayList<>());
+                final java.util.concurrent.atomic.AtomicInteger pending = new java.util.concurrent.atomic.AtomicInteger(matchingChats.size());
+
+                for (TempChatInfo info : matchingChats) {
+                    FirebaseFirestore.getInstance().collection("users").document(info.partnerUid).get()
+                            .addOnSuccessListener(userDoc -> {
+                                String name = null;
+                                String photo = null;
+                                if (userDoc != null && userDoc.exists()) {
+                                    name = userDoc.getString("name");
+                                    photo = userDoc.getString("photoUrl");
+                                    if (photo == null || photo.isEmpty()) photo = userDoc.getString("photo");
+                                }
+                                if (name == null || name.isEmpty()) {
+                                    name = "User (" + (info.partnerUid.length() > 4 ? info.partnerUid.substring(0, 4) : info.partnerUid) + ")";
+                                }
+
+                                tempList.add(new ChatItemWithTs(
+                                        new ChatItem(info.partnerUid, name, info.lastMsg, info.lastTime != null ? info.lastTime : "", photo, 0, true),
+                                        info.maxTimestamp
+                                ));
+
+                                if (pending.decrementAndGet() == 0) {
+                                    updateAndSortChatList(tempList);
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                String fallbackName = "User (" + (info.partnerUid.length() > 4 ? info.partnerUid.substring(0, 4) : info.partnerUid) + ")";
+                                tempList.add(new ChatItemWithTs(
+                                        new ChatItem(info.partnerUid, fallbackName, info.lastMsg, info.lastTime != null ? info.lastTime : "", null, 0, true),
+                                        info.maxTimestamp
+                                ));
+                                if (pending.decrementAndGet() == 0) {
+                                    updateAndSortChatList(tempList);
+                                }
+                            });
                 }
             }
 
@@ -206,6 +245,39 @@ public class UserChatActivity extends AppCompatActivity {
                 Toast.makeText(UserChatActivity.this, "Failed to load chats: " + error.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void updateAndSortChatList(List<ChatItemWithTs> tempList) {
+        java.util.Collections.sort(tempList, (c1, c2) -> Long.compare(c2.timestamp, c1.timestamp));
+        chatList.clear();
+        for (ChatItemWithTs itemWithTs : tempList) {
+            chatList.add(itemWithTs.chatItem);
+        }
+        chatAdapter.filter(etSearchUser.getText().toString());
+    }
+
+    private static class TempChatInfo {
+        final String partnerUid;
+        final String lastMsg;
+        final String lastTime;
+        final long maxTimestamp;
+
+        TempChatInfo(String partnerUid, String lastMsg, String lastTime, long maxTimestamp) {
+            this.partnerUid = partnerUid;
+            this.lastMsg = lastMsg;
+            this.lastTime = lastTime;
+            this.maxTimestamp = maxTimestamp;
+        }
+    }
+
+    private static class ChatItemWithTs {
+        final ChatItem chatItem;
+        final long timestamp;
+
+        ChatItemWithTs(ChatItem chatItem, long timestamp) {
+            this.chatItem = chatItem;
+            this.timestamp = timestamp;
+        }
     }
 
     private void setupNotificationList() {
