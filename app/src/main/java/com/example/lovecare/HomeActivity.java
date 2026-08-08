@@ -641,21 +641,19 @@ public class HomeActivity extends AppCompatActivity {
      * where both users are now free.
      */
     private void checkForPendingLoveSpaceNotification(String currentUid) {
-        // First check if current user currently has an active LoveSpace
         db.collection("lovespaces")
                 .whereEqualTo("user1Uid", currentUid)
                 .whereEqualTo("active", true)
                 .get()
                 .addOnSuccessListener(snap1 -> {
-                    if (!snap1.isEmpty()) return; // User already has an active LoveSpace
+                    if (!snap1.isEmpty()) return;
                     db.collection("lovespaces")
                             .whereEqualTo("user2Uid", currentUid)
                             .whereEqualTo("active", true)
                             .get()
                             .addOnSuccessListener(snap2 -> {
-                                if (!snap2.isEmpty()) return; // User already has an active LoveSpace
+                                if (!snap2.isEmpty()) return;
 
-                                // User is free! Check notifications for pending mutual matches
                                 db.collection("notifications")
                                         .whereEqualTo("toUid", currentUid)
                                         .whereEqualTo("type", "mutual_like_blocked")
@@ -663,7 +661,6 @@ public class HomeActivity extends AppCompatActivity {
                                         .addOnSuccessListener(notifSnap -> {
                                             if (notifSnap.isEmpty()) return;
 
-                                            // Get latest pending notification
                                             DocumentSnapshot latestDoc = null;
                                             long maxTs = -1;
                                             for (DocumentSnapshot doc : notifSnap.getDocuments()) {
@@ -680,7 +677,7 @@ public class HomeActivity extends AppCompatActivity {
                                                 if (targetName == null) targetName = "Someone";
 
                                                 if (targetUid != null && !targetUid.isEmpty()) {
-                                                    checkTargetAndPromptMatch(currentUid, targetUid, targetName);
+                                                    checkTargetAndPromptMatch(currentUid, targetUid, targetName, latestDoc);
                                                 }
                                             }
                                         });
@@ -688,29 +685,54 @@ public class HomeActivity extends AppCompatActivity {
                 });
     }
 
-    private void checkTargetAndPromptMatch(String myUid, String targetUid, String targetName) {
+    private void checkTargetAndPromptMatch(String myUid, String targetUid, String targetName, DocumentSnapshot notifDoc) {
+        // Check if there is already an existing (active or past) LoveSpace between these two users
         db.collection("lovespaces")
-                .whereEqualTo("user1Uid", targetUid)
-                .whereEqualTo("active", true)
+                .whereEqualTo("user1Uid", myUid)
+                .whereEqualTo("user2Uid", targetUid)
                 .get()
-                .addOnSuccessListener(snap1 -> {
-                    if (!snap1.isEmpty()) return;
+                .addOnSuccessListener(ls1 -> {
+                    if (!ls1.isEmpty()) {
+                        // Past or active LoveSpace already existed! Delete stale notification.
+                        if (notifDoc != null) notifDoc.getReference().delete();
+                        return;
+                    }
                     db.collection("lovespaces")
-                            .whereEqualTo("user2Uid", targetUid)
-                            .whereEqualTo("active", true)
+                            .whereEqualTo("user1Uid", targetUid)
+                            .whereEqualTo("user2Uid", myUid)
                             .get()
-                            .addOnSuccessListener(snap2 -> {
-                                if (!snap2.isEmpty()) return;
+                            .addOnSuccessListener(ls2 -> {
+                                if (!ls2.isEmpty()) {
+                                    // Past or active LoveSpace already existed! Delete stale notification.
+                                    if (notifDoc != null) notifDoc.getReference().delete();
+                                    return;
+                                }
 
-                                // Both are free! Offer to create LoveSpace
-                                new AlertDialog.Builder(this)
-                                        .setTitle("💕 Pending Match Ready!")
-                                        .setMessage("You and " + targetName + " mutually matched! Since both of you are now free, would you like to start your LoveSpace now?")
-                                        .setPositiveButton("Start LoveSpace", (dialog, which) -> {
-                                            createLoveSpace(myUid, targetUid);
-                                        })
-                                        .setNegativeButton("Not Now", null)
-                                        .show();
+                                db.collection("lovespaces")
+                                        .whereEqualTo("user1Uid", targetUid)
+                                        .whereEqualTo("active", true)
+                                        .get()
+                                        .addOnSuccessListener(snap1 -> {
+                                            if (!snap1.isEmpty()) return;
+                                            db.collection("lovespaces")
+                                                    .whereEqualTo("user2Uid", targetUid)
+                                                    .whereEqualTo("active", true)
+                                                    .get()
+                                                    .addOnSuccessListener(snap2 -> {
+                                                        if (!snap2.isEmpty()) return;
+
+                                                        if (isFinishing() || isDestroyed()) return;
+                                                        new AlertDialog.Builder(this)
+                                                                .setTitle("💕 Pending Match Ready!")
+                                                                .setMessage("You and " + targetName + " mutually matched! Since both of you are now free, would you like to start your LoveSpace now?")
+                                                                .setPositiveButton("Start LoveSpace", (dialog, which) -> {
+                                                                    if (notifDoc != null) notifDoc.getReference().delete();
+                                                                    createLoveSpace(myUid, targetUid);
+                                                                })
+                                                                .setNegativeButton("Not Now", null)
+                                                                .show();
+                                                    });
+                                        });
                             });
                 });
     }
