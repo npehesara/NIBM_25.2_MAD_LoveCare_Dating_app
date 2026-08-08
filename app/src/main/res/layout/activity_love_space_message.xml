@@ -1,135 +1,205 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/messageRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0714"
-    tools:context=".LoveSpaceMessage">
+    android:background="#0D0D1A">
 
-    <!-- Top Action Bar (Pink Header matching Image 3) -->
+    <!-- ── Top header bar ─────────────────────────────────────────────── -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/chatHeader"
         android:layout_width="match_parent"
         android:layout_height="64dp"
-        android:background="#FF4D6D"
-        android:paddingHorizontal="8dp"
+        android:background="#12121F"
+        android:elevation="4dp"
         app:layout_constraintTop_toTopOf="parent">
 
+        <!-- Back button -->
         <ImageButton
             android:id="@+id/btnChatBack"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Back"
             android:src="@drawable/ic_back"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="#FFFFFF" />
+            app:tint="#FFFFFF"
+            android:layout_marginStart="4dp" />
 
-        <TextView
-            android:id="@+id/tvChatUsername"
+        <!-- Partner avatar letter -->
+        <FrameLayout
+            android:id="@+id/flHeaderAvatar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pink_circle"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/btnChatBack"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginStart="4dp">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/ivHeaderPartnerPhoto"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                app:shapeAppearanceOverlay="@style/CircleImage" />
+
+            <TextView
+                android:id="@+id/tvHeaderAvatarLetter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </FrameLayout>
+
+        <!-- Name + online badge -->
+        <LinearLayout
+            android:id="@+id/llHeaderInfo"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="12dp"
-            android:gravity="center"
-            android:text="testacc"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold"
+            android:layout_marginStart="10dp"
+            android:orientation="vertical"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/btnChatOptions"
-            app:layout_constraintStart_toEndOf="@id/btnChatBack"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintStart_toEndOf="@id/flHeaderAvatar"
+            app:layout_constraintTop_toTopOf="parent">
 
+            <TextView
+                android:id="@+id/tvChatUsername"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Chat"
+                android:textColor="#FFFFFF"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvOnlineStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="● Online"
+                android:textColor="#4CAF50"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- Options button -->
         <ImageButton
             android:id="@+id/btnChatOptions"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Options"
             android:src="@drawable/ic_more_vert"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="#FFFFFF" />
+            app:tint="#FFFFFF"
+            android:layout_marginEnd="4dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Message RecyclerView -->
+    <!-- ── Upload progress bar ───────────────────────────────────────── -->
+    <ProgressBar
+        android:id="@+id/pbImageUpload"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:indeterminate="true"
+        android:indeterminateTint="#FF4D6D"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/chatHeader" />
+
+    <!-- ── Messages RecyclerView ─────────────────────────────────────── -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvMessages"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:clipToPadding="false"
-        android:paddingVertical="12dp"
-        app:layout_constraintBottom_toTopOf="@id/chatInputLayout"
-        app:layout_constraintTop_toBottomOf="@id/chatHeader" />
+        android:paddingHorizontal="4dp"
+        android:paddingVertical="8dp"
+        app:layout_constraintBottom_toTopOf="@id/chatInputCard"
+        app:layout_constraintTop_toBottomOf="@id/pbImageUpload" />
 
-    <!-- Bottom Input Bar (White background matching Image 3) -->
-    <LinearLayout
-        android:id="@+id/chatInputLayout"
+    <!-- ── Bottom input card ─────────────────────────────────────────── -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/chatInputCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FFFFFF"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="8dp"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginBottom="10dp"
+        app:cardBackgroundColor="#1E1E2E"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="6dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <EditText
-            android:id="@+id/etChatMessage"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@null"
-            android:hint="Type a message..."
-            android:importantForAutofill="no"
-            android:inputType="textCapSentences|textMultiLine"
-            android:maxLines="4"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="10dp"
-            android:textColor="#1A1A1A"
-            android:textColorHint="#9E9E9E"
-            android:textSize="16sp" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="6dp">
 
-        <ImageButton
-            android:id="@+id/btnAttachGallery"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Attach Image"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_gallery"
-            app:tint="#888888" />
+            <!-- Gallery icon -->
+            <ImageButton
+                android:id="@+id/btnAttachGallery"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Attach Image"
+                android:padding="8dp"
+                android:src="@drawable/ic_gallery"
+                app:tint="#FF4D6D" />
 
-        <ImageButton
-            android:id="@+id/btnAttachCamera"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="4dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Camera"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_camera"
-            app:tint="#888888" />
+            <!-- Camera icon -->
+            <ImageButton
+                android:id="@+id/btnAttachCamera"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="2dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Camera"
+                android:padding="8dp"
+                android:src="@drawable/ic_camera"
+                app:tint="#FF4D6D" />
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fabSend"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:contentDescription="Send"
-            android:src="@drawable/ic_send"
-            app:backgroundTint="#FF4D6D"
-            app:fabSize="mini"
-            app:tint="#FFFFFF" />
+            <!-- Text input -->
+            <EditText
+                android:id="@+id/etChatMessage"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="6dp"
+                android:layout_weight="1"
+                android:background="@null"
+                android:hint="Type a message…"
+                android:importantForAutofill="no"
+                android:inputType="textCapSentences|textMultiLine"
+                android:maxLines="4"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="10dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#5A5A7A"
+                android:textSize="15sp" />
 
-    </LinearLayout>
+            <!-- Send FAB -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabSend"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="Send"
+                android:src="@drawable/ic_send"
+                app:backgroundTint="#FF4D6D"
+                app:fabSize="mini"
+                app:tint="#FFFFFF" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
