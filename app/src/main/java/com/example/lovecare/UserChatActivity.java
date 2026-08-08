@@ -381,7 +381,9 @@ public class UserChatActivity extends AppCompatActivity {
             if (itemId == R.id.nav_chat) {
                 return true;
             } else if (itemId == R.id.nav_swipe) {
-                intent = new Intent(this, NavigationBar.class);
+                intent = new Intent(this, HomeActivity.class);
+            } else if (itemId == R.id.nav_starred) {
+                intent = new Intent(this, StarredActivity.class);
             } else if (itemId == R.id.nav_likes) {
                 intent = new Intent(this, LoveSpaceActivity.class);
             } else if (itemId == R.id.nav_profile) {

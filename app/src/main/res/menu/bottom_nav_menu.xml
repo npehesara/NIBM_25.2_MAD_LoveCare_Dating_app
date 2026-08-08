@@ -5,6 +5,10 @@
         android:icon="@drawable/ic_flame"
         android:title="Swipe" />
     <item
+        android:id="@+id/nav_starred"
+        android:icon="@drawable/ic_star"
+        android:title="Starred" />
+    <item
         android:id="@+id/nav_likes"
         android:icon="@drawable/ic_heart"
         android:title="LoveSpace" />

@@ -181,15 +181,50 @@ public class LoveSpaceActivity extends AppCompatActivity {
         db.collection("users").document(partnerUid).get()
                 .addOnSuccessListener(userDoc -> {
                     if (userDoc.exists()) {
+                        String name = userDoc.getString("name");
+                        if (name == null || name.isEmpty()) name = "Partner";
+
+                        View flPartnerLetterAvatar = findViewById(R.id.flPartnerLetterAvatar);
+                        TextView tvPartnerAvatarLetter = findViewById(R.id.tvPartnerAvatarLetter);
+                        ShapeableImageView ivPartnerProfile = findViewById(R.id.ivPartnerProfile);
+
+                        if (flPartnerLetterAvatar != null && tvPartnerAvatarLetter != null) {
+                            flPartnerLetterAvatar.setVisibility(View.VISIBLE);
+                            char letter = name.trim().length() > 0 ? Character.toUpperCase(name.trim().charAt(0)) : '?';
+                            tvPartnerAvatarLetter.setText(String.valueOf(letter));
+                        }
+                        if (ivPartnerProfile != null) {
+                            ivPartnerProfile.setVisibility(View.INVISIBLE);
+                        }
+
                         // Load partner photo
                         String photoUrl = userDoc.getString("photoUrl");
                         if (photoUrl == null || photoUrl.isEmpty()) photoUrl = userDoc.getString("photo");
 
-                        ShapeableImageView ivPartnerProfile = findViewById(R.id.ivPartnerProfile);
                         if (photoUrl != null && !photoUrl.isEmpty() && photoUrl.startsWith("http") && ivPartnerProfile != null) {
                             Glide.with(this)
                                     .load(photoUrl)
                                     .centerCrop()
+                                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                                        @Override
+                                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
+                                                                    Object model,
+                                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                                    boolean isFirstResource) {
+                                            return false;
+                                        }
+
+                                        @Override
+                                        public boolean onResourceReady(android.graphics.drawable.Drawable resource,
+                                                                       Object model,
+                                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                                       com.bumptech.glide.load.DataSource dataSource,
+                                                                       boolean isFirstResource) {
+                                            if (flPartnerLetterAvatar != null) flPartnerLetterAvatar.setVisibility(View.GONE);
+                                            if (ivPartnerProfile != null) ivPartnerProfile.setVisibility(View.VISIBLE);
+                                            return false;
+                                        }
+                                    })
                                     .into(ivPartnerProfile);
                         }
 
@@ -203,14 +238,49 @@ public class LoveSpaceActivity extends AppCompatActivity {
         db.collection("users").document(currentUid).get()
                 .addOnSuccessListener(userDoc -> {
                     if (userDoc.exists()) {
+                        String name = userDoc.getString("name");
+                        if (name == null || name.isEmpty()) name = "User";
+
+                        View flUserLetterAvatar = findViewById(R.id.flUserLetterAvatar);
+                        TextView tvUserAvatarLetter = findViewById(R.id.tvUserAvatarLetter);
+                        ShapeableImageView ivUserProfile = findViewById(R.id.ivUserProfile);
+
+                        if (flUserLetterAvatar != null && tvUserAvatarLetter != null) {
+                            flUserLetterAvatar.setVisibility(View.VISIBLE);
+                            char letter = name.trim().length() > 0 ? Character.toUpperCase(name.trim().charAt(0)) : '?';
+                            tvUserAvatarLetter.setText(String.valueOf(letter));
+                        }
+                        if (ivUserProfile != null) {
+                            ivUserProfile.setVisibility(View.INVISIBLE);
+                        }
+
                         String photoUrl = userDoc.getString("photoUrl");
                         if (photoUrl == null || photoUrl.isEmpty()) photoUrl = userDoc.getString("photo");
 
-                        ShapeableImageView ivUserProfile = findViewById(R.id.ivUserProfile);
                         if (photoUrl != null && !photoUrl.isEmpty() && photoUrl.startsWith("http") && ivUserProfile != null) {
                             Glide.with(this)
                                     .load(photoUrl)
                                     .centerCrop()
+                                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                                        @Override
+                                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
+                                                                    Object model,
+                                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                                    boolean isFirstResource) {
+                                            return false;
+                                        }
+
+                                        @Override
+                                        public boolean onResourceReady(android.graphics.drawable.Drawable resource,
+                                                                       Object model,
+                                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                                       com.bumptech.glide.load.DataSource dataSource,
+                                                                       boolean isFirstResource) {
+                                            if (flUserLetterAvatar != null) flUserLetterAvatar.setVisibility(View.GONE);
+                                            if (ivUserProfile != null) ivUserProfile.setVisibility(View.VISIBLE);
+                                            return false;
+                                        }
+                                    })
                                     .into(ivUserProfile);
                         }
                     }

@@ -132,6 +132,9 @@ public class HomeActivity extends AppCompatActivity {
             int id = item.getItemId();
             if (id == R.id.nav_swipe) {
                 return true; // already here
+            } else if (id == R.id.nav_starred) {
+                startActivity(new Intent(this, StarredActivity.class)
+                        .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
             } else if (id == R.id.nav_likes) {
                 startActivity(new Intent(this, LoveSpaceActivity.class)
                         .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));

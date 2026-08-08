@@ -172,14 +172,33 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
+            <!-- Fallback Letter Avatar -->
+            <FrameLayout
+                android:id="@+id/flUserLetterAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="6dp"
+                android:background="@drawable/bg_pink_circle">
+
+                <TextView
+                    android:id="@+id/tvUserAvatarLetter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="U"
+                    android:textColor="#FFFFFF"
+                    android:textSize="44sp"
+                    android:textStyle="bold" />
+            </FrameLayout>
+
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivUserProfile"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:padding="6dp"
                 android:scaleType="centerCrop"
-                android:src="@drawable/ic_menu_gallery_girl"
                 android:clickable="false"
+                android:visibility="invisible"
                 app:shapeAppearanceOverlay="@style/CircleImage"
                 app:strokeColor="#FF4D6D"
                 app:strokeWidth="4dp" />
@@ -222,13 +241,32 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
+            <!-- Fallback Letter Avatar -->
+            <FrameLayout
+                android:id="@+id/flPartnerLetterAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="6dp"
+                android:background="@drawable/bg_pink_circle">
+
+                <TextView
+                    android:id="@+id/tvPartnerAvatarLetter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="P"
+                    android:textColor="#FFFFFF"
+                    android:textSize="44sp"
+                    android:textStyle="bold" />
+            </FrameLayout>
+
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivPartnerProfile"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:padding="6dp"
                 android:scaleType="centerCrop"
-                android:src="@drawable/ic_menu_gallery_boy"
+                android:visibility="invisible"
                 app:shapeAppearanceOverlay="@style/CircleImage"
                 app:strokeColor="#FF4D6D"
                 app:strokeWidth="4dp" />
