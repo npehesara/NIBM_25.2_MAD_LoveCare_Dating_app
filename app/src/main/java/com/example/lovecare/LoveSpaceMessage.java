@@ -2,15 +2,20 @@ package com.example.lovecare;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -19,6 +24,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
@@ -40,6 +46,7 @@ import com.google.firebase.database.ValueEventListener;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
@@ -49,6 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -67,7 +75,12 @@ public class LoveSpaceMessage extends AppCompatActivity {
             "https://api.cloudinary.com/v1_1/" + CLOUDINARY_CLOUD_NAME + "/image/upload";
     private static final String CHAT_FOLDER = "lovecare_chat";
 
-    private final OkHttpClient httpClient = new OkHttpClient();
+    // Increased OkHttp timeouts to 60 seconds to prevent upload timeouts
+    private final OkHttpClient httpClient = new OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .build();
 
     // ── Views ──────────────────────────────────────────────────────────
     private TextView tvChatUsername, tvHeaderAvatarLetter;
@@ -76,6 +89,8 @@ public class LoveSpaceMessage extends AppCompatActivity {
     private EditText etChatMessage;
     private FloatingActionButton fabSend;
     private ProgressBar pbImageUpload;
+    private ImageView ivChatWallpaper;
+    private View vWallpaperOverlay;
 
     // ── Data ───────────────────────────────────────────────────────────
     private ChatMessageAdapter messageAdapter;
@@ -88,6 +103,7 @@ public class LoveSpaceMessage extends AppCompatActivity {
     private DatabaseReference chatRef;
     private String myUid;
     private String partnerUid;
+    private String chatId;
 
     // ── Camera state ───────────────────────────────────────────────────
     private Uri cameraImageUri;
@@ -101,6 +117,11 @@ public class LoveSpaceMessage extends AppCompatActivity {
     private final ActivityResultLauncher<Uri> cameraLauncher =
             registerForActivityResult(new ActivityResultContracts.TakePicture(), success -> {
                 if (success && cameraImageUri != null) uploadImageToCloudinary(cameraImageUri);
+            });
+
+    private final ActivityResultLauncher<String> wallpaperPickerLauncher =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (uri != null) saveAndApplyWallpaper(uri);
             });
 
     private final ActivityResultLauncher<String[]> cameraPermissionLauncher =
@@ -141,7 +162,7 @@ public class LoveSpaceMessage extends AppCompatActivity {
         partnerPhoto = getIntent().getStringExtra("userPhoto");
 
         // Build deterministic chatId
-        String chatId = myUid.compareTo(partnerUid) < 0 ? myUid + "_" + partnerUid : partnerUid + "_" + myUid;
+        chatId = myUid.compareTo(partnerUid) < 0 ? myUid + "_" + partnerUid : partnerUid + "_" + myUid;
         chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId).child("messages");
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.messageRoot), (v, insets) -> {
@@ -152,6 +173,7 @@ public class LoveSpaceMessage extends AppCompatActivity {
 
         initViews();
         setupHeader();
+        setupWallpaper();
         setupMessageList();
         setupSendButton();
         setupAttachmentButtons();
@@ -167,13 +189,94 @@ public class LoveSpaceMessage extends AppCompatActivity {
         etChatMessage         = findViewById(R.id.etChatMessage);
         fabSend               = findViewById(R.id.fabSend);
         pbImageUpload         = findViewById(R.id.pbImageUpload);
+        ivChatWallpaper       = findViewById(R.id.ivChatWallpaper);
+        vWallpaperOverlay     = findViewById(R.id.vWallpaperOverlay);
 
         View btnBack = findViewById(R.id.btnChatBack);
         if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
         View btnOptions = findViewById(R.id.btnChatOptions);
-        if (btnOptions != null) btnOptions.setOnClickListener(v ->
-                Toast.makeText(this, "Chat Options", Toast.LENGTH_SHORT).show());
+        if (btnOptions != null) btnOptions.setOnClickListener(this::showChatOptionsMenu);
+    }
+
+    // ── Wallpaper Management ───────────────────────────────────────────
+
+    private void setupWallpaper() {
+        File wallpaperFile = getWallpaperFile();
+        if (wallpaperFile.exists()) {
+            displayWallpaper(wallpaperFile.getAbsolutePath());
+        } else {
+            if (ivChatWallpaper != null) ivChatWallpaper.setVisibility(View.GONE);
+            if (vWallpaperOverlay != null) vWallpaperOverlay.setVisibility(View.GONE);
+        }
+    }
+
+    private File getWallpaperFile() {
+        return new File(getFilesDir(), "chat_wallpaper_" + chatId + ".jpg");
+    }
+
+    private void saveAndApplyWallpaper(Uri uri) {
+        try {
+            InputStream is = getContentResolver().openInputStream(uri);
+            if (is == null) return;
+            File wallpaperFile = getWallpaperFile();
+            FileOutputStream fos = new FileOutputStream(wallpaperFile);
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = is.read(buffer)) != -1) {
+                fos.write(buffer, 0, count);
+            }
+            fos.close();
+            is.close();
+
+            displayWallpaper(wallpaperFile.getAbsolutePath());
+            Toast.makeText(this, "Chat wallpaper set!", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Failed to set wallpaper: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void displayWallpaper(String filePath) {
+        if (ivChatWallpaper != null) {
+            ivChatWallpaper.setVisibility(View.VISIBLE);
+            Glide.with(this).load(filePath).centerCrop().into(ivChatWallpaper);
+        }
+        if (vWallpaperOverlay != null) {
+            vWallpaperOverlay.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void removeWallpaper() {
+        File wallpaperFile = getWallpaperFile();
+        if (wallpaperFile.exists()) {
+            wallpaperFile.delete();
+        }
+        if (ivChatWallpaper != null) ivChatWallpaper.setVisibility(View.GONE);
+        if (vWallpaperOverlay != null) vWallpaperOverlay.setVisibility(View.GONE);
+        Toast.makeText(this, "Wallpaper removed", Toast.LENGTH_SHORT).show();
+    }
+
+    private void showChatOptionsMenu(View anchor) {
+        PopupMenu popup = new PopupMenu(this, anchor);
+        boolean hasWallpaper = getWallpaperFile().exists();
+        if (hasWallpaper) {
+            popup.getMenu().add(0, 1, 0, "Change Chat Wallpaper");
+            popup.getMenu().add(0, 2, 1, "Remove Wallpaper");
+        } else {
+            popup.getMenu().add(0, 1, 0, "Set Chat Wallpaper");
+        }
+
+        popup.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == 1) {
+                wallpaperPickerLauncher.launch("image/*");
+                return true;
+            } else if (item.getItemId() == 2) {
+                removeWallpaper();
+                return true;
+            }
+            return false;
+        });
+        popup.show();
     }
 
     // ── Header setup ──────────────────────────────────────────────────
@@ -340,7 +443,7 @@ public class LoveSpaceMessage extends AppCompatActivity {
         }
     }
 
-    // ── Cloudinary upload ─────────────────────────────────────────────
+    // ── Cloudinary upload with Image Compression ───────────────────────
 
     private void uploadImageToCloudinary(Uri imageUri) {
         if (pbImageUpload != null) pbImageUpload.setVisibility(View.VISIBLE);
@@ -348,16 +451,15 @@ public class LoveSpaceMessage extends AppCompatActivity {
 
         new Thread(() -> {
             try {
-                InputStream is = getContentResolver().openInputStream(imageUri);
-                if (is == null) {
+                // Compress & downscale image before uploading to prevent timeouts
+                byte[] bytes = getCompressedImageBytes(imageUri);
+                if (bytes == null || bytes.length == 0) {
                     runOnUiThread(() -> {
                         if (pbImageUpload != null) pbImageUpload.setVisibility(View.GONE);
-                        Toast.makeText(this, "Cannot read image", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Cannot process image", Toast.LENGTH_SHORT).show();
                     });
                     return;
                 }
-                byte[] bytes = readAllBytes(is);
-                is.close();
 
                 long timestamp = System.currentTimeMillis() / 1000L;
                 String toSign = "folder=" + CHAT_FOLDER + "&timestamp=" + timestamp + CLOUDINARY_API_SECRET;
@@ -406,6 +508,48 @@ public class LoveSpaceMessage extends AppCompatActivity {
         }).start();
     }
 
+    private byte[] getCompressedImageBytes(Uri uri) {
+        try {
+            InputStream input = getContentResolver().openInputStream(uri);
+            if (input == null) return null;
+
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeStream(input, null, options);
+            input.close();
+
+            int originalWidth = options.outWidth;
+            int originalHeight = options.outHeight;
+            int maxDimension = 1024;
+
+            int inSampleSize = 1;
+            if (originalWidth > maxDimension || originalHeight > maxDimension) {
+                final int halfWidth = originalWidth / 2;
+                final int halfHeight = originalHeight / 2;
+                while ((halfWidth / inSampleSize) >= maxDimension && (halfHeight / inSampleSize) >= maxDimension) {
+                    inSampleSize *= 2;
+                }
+            }
+
+            BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
+            decodeOptions.inSampleSize = inSampleSize;
+
+            input = getContentResolver().openInputStream(uri);
+            Bitmap bitmap = BitmapFactory.decodeStream(input, null, decodeOptions);
+            if (input != null) input.close();
+
+            if (bitmap == null) return null;
+
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+            bitmap.recycle();
+            return baos.toByteArray();
+        } catch (Exception e) {
+            android.util.Log.e("ImageCompression", "Error compressing image: " + e.getMessage());
+            return null;
+        }
+    }
+
     private void sendImageMessage(String imageUrl) {
         String currentTime = new SimpleDateFormat("h:mm a", Locale.getDefault()).format(new Date());
         Map<String, Object> msg = new HashMap<>();
@@ -421,14 +565,6 @@ public class LoveSpaceMessage extends AppCompatActivity {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────
-
-    private static byte[] readAllBytes(InputStream is) throws IOException {
-        java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
-        byte[] chunk = new byte[8192];
-        int n;
-        while ((n = is.read(chunk)) != -1) buffer.write(chunk, 0, n);
-        return buffer.toByteArray();
-    }
 
     private static String sha1Hex(String input) throws Exception {
         java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");

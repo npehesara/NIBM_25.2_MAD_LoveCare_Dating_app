@@ -6,6 +6,23 @@
     android:layout_height="match_parent"
     android:background="#0D0D1A">
 
+    <!-- ── Wallpaper Background ImageView ────────────────────────────── -->
+    <ImageView
+        android:id="@+id/ivChatWallpaper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:contentDescription="Chat wallpaper"
+        android:visibility="gone" />
+
+    <!-- ── Optional dim overlay so text stays readable over custom wallpaper ── -->
+    <View
+        android:id="@+id/vWallpaperOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#99000000"
+        android:visibility="gone" />
+
     <!-- ── Top header bar ─────────────────────────────────────────────── -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/chatHeader"
