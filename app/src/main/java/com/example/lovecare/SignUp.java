@@ -123,7 +123,7 @@ public class SignUp extends AppCompatActivity {
         if ("admin".equalsIgnoreCase(role != null ? role.trim() : "")) {
             intent = new Intent(SignUp.this, MainActivity.class);
         } else {
-            intent = new Intent(SignUp.this, NavigationBar.class);
+            intent = new Intent(SignUp.this, QuestionnaireActivity.class);
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);

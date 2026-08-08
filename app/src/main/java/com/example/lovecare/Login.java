@@ -124,7 +124,7 @@ public class Login extends AppCompatActivity {
                     } else {
                         Toast.makeText(Login.this, "Admin Access Granted!", Toast.LENGTH_SHORT).show();
                     }
-                    navigateToDashboard("admin");
+                    navigateToDashboard("admin", true);
                 });
     }
 
@@ -133,9 +133,14 @@ public class Login extends AppCompatActivity {
                 .addOnCompleteListener(task -> {
                     btnLogin.setEnabled(true);
                     String role = null;
+                    boolean hasCompletedQuestionnaire = false;
                     if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
                         DocumentSnapshot doc = task.getResult();
                         role = doc.getString("role");
+                        Boolean completed = doc.getBoolean("hasCompletedQuestionnaire");
+                        if (completed != null) {
+                            hasCompletedQuestionnaire = completed;
+                        }
                         Log.d(TAG, "Firestore role fetched: " + role + " for doc ID: " + uid);
                     }
 
@@ -149,18 +154,23 @@ public class Login extends AppCompatActivity {
                     }
 
                     Log.d(TAG, "Final role resolved: " + role + " for email: " + email);
-                    navigateToDashboard(role);
+                    navigateToDashboard(role, hasCompletedQuestionnaire);
                 });
     }
 
-    private void navigateToDashboard(String role) {
+    private void navigateToDashboard(String role, boolean hasCompletedQuestionnaire) {
         Intent intent;
         if ("admin".equalsIgnoreCase(role != null ? role.trim() : "")) {
             Toast.makeText(Login.this, "Welcome Admin! Opening Admin Dashboard...", Toast.LENGTH_SHORT).show();
             intent = new Intent(Login.this, MainActivity.class);
         } else {
-            Toast.makeText(Login.this, "Welcome! Opening User Dashboard...", Toast.LENGTH_SHORT).show();
-            intent = new Intent(Login.this, NavigationBar.class);
+            if (hasCompletedQuestionnaire) {
+                Toast.makeText(Login.this, "Welcome! Opening User Dashboard...", Toast.LENGTH_SHORT).show();
+                intent = new Intent(Login.this, NavigationBar.class);
+            } else {
+                Toast.makeText(Login.this, "Welcome! Please complete your profile...", Toast.LENGTH_SHORT).show();
+                intent = new Intent(Login.this, QuestionnaireActivity.class);
+            }
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
