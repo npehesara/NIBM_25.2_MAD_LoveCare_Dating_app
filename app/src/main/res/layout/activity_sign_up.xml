@@ -142,43 +142,6 @@
                 android:textColor="@color/black"
                 android:textColorHint="#80000000" />
 
-            <!-- Role Selection -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:text="Account Role"
-                android:textColor="@color/black"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <RadioGroup
-                android:id="@+id/rgRole"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:orientation="horizontal">
-
-                <RadioButton
-                    android:id="@+id/rbUser"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:checked="true"
-                    android:text="User"
-                    android:textColor="@color/black"
-                    android:textSize="15sp" />
-
-                <RadioButton
-                    android:id="@+id/rbAdmin"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Admin"
-                    android:textColor="@color/black"
-                    android:textSize="15sp" />
-            </RadioGroup>
-
             <!-- Sign Up Button -->
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_signup"

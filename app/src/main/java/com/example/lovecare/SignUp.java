@@ -53,8 +53,6 @@ public class SignUp extends AppCompatActivity {
         etFullName = findViewById(R.id.etFullName);
         etEmail = findViewById(R.id.etEmailSignUp);
         etPassword = findViewById(R.id.etPasswordSignUp);
-        rgRole = findViewById(R.id.rgRole);
-        rbAdmin = findViewById(R.id.rbAdmin);
         btnSignUp = findViewById(R.id.btn_signup);
         tvLogin = findViewById(R.id.tvLogin);
 
@@ -71,7 +69,7 @@ public class SignUp extends AppCompatActivity {
         String name = etFullName.getText().toString().trim();
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
-        String role = (rbAdmin != null && rbAdmin.isChecked()) || email.toLowerCase().startsWith("admin") ? "admin" : "user";
+        String role = email.toLowerCase().startsWith("admin") ? "admin" : "user";
 
         if (TextUtils.isEmpty(name)) {
             etFullName.setError("Full Name is required");

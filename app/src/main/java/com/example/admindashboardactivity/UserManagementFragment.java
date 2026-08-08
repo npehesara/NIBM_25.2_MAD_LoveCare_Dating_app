@@ -54,7 +54,6 @@ public class UserManagementFragment extends Fragment implements UserAdapter.OnUs
     private CardView cardEmptyState;
     private TextView tvUserCount;
     private EditText etSearch;
-    private FloatingActionButton fabAddUser;
 
     // ── Data ─────────────────────────────────────────────────────────────────
     private FirebaseFirestore db;
@@ -84,7 +83,6 @@ public class UserManagementFragment extends Fragment implements UserAdapter.OnUs
         cardEmptyState = view.findViewById(R.id.card_empty_state);
         tvUserCount    = view.findViewById(R.id.tv_user_count);
         etSearch       = view.findViewById(R.id.et_search_users);
-        fabAddUser     = view.findViewById(R.id.fab_add_user);
 
         // Setup RecyclerView
         adapter = new UserAdapter(filteredUsers, this);
@@ -104,9 +102,6 @@ public class UserManagementFragment extends Fragment implements UserAdapter.OnUs
             @Override
             public void afterTextChanged(Editable s) { }
         });
-
-        // FAB: Add new user
-        fabAddUser.setOnClickListener(v -> showAddUserDialog());
 
         // Load users from Firestore
         loadUsers();
