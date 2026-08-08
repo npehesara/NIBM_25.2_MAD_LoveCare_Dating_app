@@ -48,7 +48,10 @@ public class HomeActivity extends AppCompatActivity {
     private android.widget.FrameLayout flLetterAvatar;
     private TextView tvAvatarLetter;
 
-    private FloatingActionButton btnUndo, btnDislike, btnSuperLike, btnLike, btnMessage;
+    private FloatingActionButton btnUndo, btnSuperLike, btnLike, btnMessage;
+
+
+
 
     // ── State ─────────────────────────────────────────────────────────────────
     private List<DocumentSnapshot> suggestedUsers = new ArrayList<>();
@@ -101,10 +104,12 @@ public class HomeActivity extends AppCompatActivity {
         tvWeightChip      = findViewById(R.id.tvWeightChip);
 
         btnUndo      = findViewById(R.id.btnUndo);
-        btnDislike   = findViewById(R.id.btnDislike);
         btnSuperLike = findViewById(R.id.btnSuperLike);
         btnLike      = findViewById(R.id.btnLike);
         btnMessage   = findViewById(R.id.btnMessage);
+
+
+
 
         // Wire up bottom navigation
         setupBottomNav();
@@ -155,63 +160,84 @@ public class HomeActivity extends AppCompatActivity {
             return;
         }
 
-        // 1. Fetch current logged-in user's profile details to calculate match scores
-        db.collection("users").document(currentUid).get()
-                .addOnSuccessListener(currentUserDoc -> {
-                    // 2. Fetch all users from Firestore
-                    db.collection("users")
-                            .get()
-                            .addOnSuccessListener(usersSnapshot -> {
-                                List<UserWithScore> scoredUsers = new ArrayList<>();
+        // 1. Fetch already swiped user UIDs to filter suggestions
+        db.collection("swipes")
+                .whereEqualTo("fromUid", currentUid)
+                .get()
+                .addOnSuccessListener(swipesSnapshot -> {
+                    java.util.HashSet<String> swipedUids = new java.util.HashSet<>();
+                    for (DocumentSnapshot swipeDoc : swipesSnapshot.getDocuments()) {
+                        String toUid = swipeDoc.getString("toUid");
+                        if (toUid != null) {
+                            swipedUids.add(toUid);
+                        }
+                    }
 
-                                for (DocumentSnapshot doc : usersSnapshot.getDocuments()) {
-                                    String docId = doc.getId();
+                    // 2. Fetch current logged-in user's profile details to calculate match scores
+                    db.collection("users").document(currentUid).get()
+                            .addOnSuccessListener(currentUserDoc -> {
+                                // 3. Fetch all users from Firestore
+                                db.collection("users")
+                                        .get()
+                                        .addOnSuccessListener(usersSnapshot -> {
+                                            List<UserWithScore> scoredUsers = new ArrayList<>();
 
-                                    // Filter checks:
-                                    // - Exclude current user (logged-in user)
-                                    if (docId.equalsIgnoreCase(currentUid)) continue;
+                                            for (DocumentSnapshot doc : usersSnapshot.getDocuments()) {
+                                                String docId = doc.getId();
 
-                                    // - Exclude admin role
-                                    String role = doc.getString("role");
-                                    if ("admin".equalsIgnoreCase(role)) continue;
+                                                // Exclude already swiped profiles
+                                                if (swipedUids.contains(docId)) continue;
 
-                                    // Calculate match score
-                                    int score = calculateMatchScore(currentUserDoc, doc);
-                                    scoredUsers.add(new UserWithScore(doc, score));
-                                }
+                                                // Exclude current user (logged-in user)
+                                                if (docId.equalsIgnoreCase(currentUid)) continue;
 
-                                // Sort in descending order of match score
-                                Collections.sort(scoredUsers, new Comparator<UserWithScore>() {
-                                    @Override
-                                    public int compare(UserWithScore u1, UserWithScore u2) {
-                                        return Integer.compare(u2.score, u1.score);
-                                    }
-                                });
+                                                // Exclude admin role
+                                                String role = doc.getString("role");
+                                                if ("admin".equalsIgnoreCase(role)) continue;
 
-                                // Populate suggestedUsers list
-                                suggestedUsers.clear();
-                                for (UserWithScore u : scoredUsers) {
-                                    suggestedUsers.add(u.doc);
-                                }
+                                                // Calculate match score
+                                                int score = calculateMatchScore(currentUserDoc, doc);
+                                                scoredUsers.add(new UserWithScore(doc, score));
+                                            }
 
-                                pbLoading.setVisibility(View.GONE);
+                                            // Sort in descending order of match score
+                                            Collections.sort(scoredUsers, new Comparator<UserWithScore>() {
+                                                @Override
+                                                public int compare(UserWithScore u1, UserWithScore u2) {
+                                                    return Integer.compare(u2.score, u1.score);
+                                                }
+                                            });
 
-                                if (suggestedUsers.isEmpty()) {
-                                    showEmptyState();
-                                } else {
-                                    currentIndex = 0;
-                                    setProfileVisible(true);
-                                    displayUser(suggestedUsers.get(0));
-                                }
+                                            // Populate suggestedUsers list
+                                            suggestedUsers.clear();
+                                            for (UserWithScore u : scoredUsers) {
+                                                suggestedUsers.add(u.doc);
+                                            }
+
+                                            pbLoading.setVisibility(View.GONE);
+
+                                            if (suggestedUsers.isEmpty()) {
+                                                showEmptyState();
+                                            } else {
+                                                currentIndex = 0;
+                                                setProfileVisible(true);
+                                                displayUser(suggestedUsers.get(0));
+                                            }
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            android.util.Log.e("HomeActivity", "Failed to fetch users: " + e.getMessage(), e);
+                                            pbLoading.setVisibility(View.GONE);
+                                            showEmptyState();
+                                        });
                             })
                             .addOnFailureListener(e -> {
-                                android.util.Log.e("HomeActivity", "Failed to fetch users: " + e.getMessage(), e);
+                                android.util.Log.e("HomeActivity", "Failed to fetch currentUserDoc: " + e.getMessage(), e);
                                 pbLoading.setVisibility(View.GONE);
                                 showEmptyState();
                             });
                 })
                 .addOnFailureListener(e -> {
-                    android.util.Log.e("HomeActivity", "Failed to fetch currentUserDoc: " + e.getMessage(), e);
+                    android.util.Log.e("HomeActivity", "Failed to fetch swipes: " + e.getMessage(), e);
                     pbLoading.setVisibility(View.GONE);
                     showEmptyState();
                 });
@@ -375,13 +401,35 @@ public class HomeActivity extends AppCompatActivity {
         if (photoUrl == null || photoUrl.isEmpty()) photoUrl = user.getString("photo");
 
         if (photoUrl != null && !photoUrl.isEmpty() && photoUrl.startsWith("http")) {
-            flLetterAvatar.setVisibility(View.GONE);
-            ivProfileImage.setVisibility(View.VISIBLE);
+            // Instantly show letter avatar while downloading real image to hide network latency
+            flLetterAvatar.setVisibility(View.VISIBLE);
+            ivProfileImage.setVisibility(View.INVISIBLE);
+            char firstLetter = name.trim().length() > 0 ? Character.toUpperCase(name.trim().charAt(0)) : '?';
+            tvAvatarLetter.setText(String.valueOf(firstLetter));
+
             Glide.with(this)
                     .load(photoUrl)
                     .centerCrop()
-                    .placeholder(R.drawable.ic_menu_gallery_girl)
-                    .error(R.drawable.ic_menu_gallery_boy)
+                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e, 
+                                                    Object model, 
+                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, 
+                                                    boolean isFirstResource) {
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(android.graphics.drawable.Drawable resource, 
+                                                       Object model, 
+                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, 
+                                                       com.bumptech.glide.load.DataSource dataSource, 
+                                                       boolean isFirstResource) {
+                            flLetterAvatar.setVisibility(View.GONE);
+                            ivProfileImage.setVisibility(View.VISIBLE);
+                            return false;
+                        }
+                    })
                     .into(ivProfileImage);
         } else {
             // fallback text-based letter avatar
@@ -439,20 +487,12 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
-        // 🔥 Dislike / Pass
-        btnDislike.setOnClickListener(v -> {
-            applyClickEffect(v);
-            recordSwipe("dislike");
-            advanceToNextUser();
-            Toast.makeText(this, "Passed 👋", Toast.LENGTH_SHORT).show();
-        });
-
         // ⭐ Super Like
         btnSuperLike.setOnClickListener(v -> {
             applyClickEffect(v);
             recordSwipe("superlike");
             advanceToNextUser();
-            Toast.makeText(this, "Super Liked ⭐", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Super Liked! ⭐", Toast.LENGTH_SHORT).show();
         });
 
         // ♥ Like
@@ -469,14 +509,15 @@ public class HomeActivity extends AppCompatActivity {
             applyClickEffect(v);
             if (!suggestedUsers.isEmpty() && currentIndex < suggestedUsers.size()) {
                 DocumentSnapshot targetUser = suggestedUsers.get(currentIndex);
-                Intent intent = new Intent(this, UserChatActivity.class);
+                Intent intent = new Intent(this, LoveSpaceMessage.class);
                 intent.putExtra("userId",    targetUser.getId());
-                intent.putExtra("userName",  targetUser.getString("name"));
+                intent.putExtra("username",  targetUser.getString("name"));
                 intent.putExtra("userPhoto", targetUser.getString("photoUrl"));
                 startActivity(intent);
             }
         });
     }
+
 
     // ── Swipe recording ───────────────────────────────────────────────────────
 

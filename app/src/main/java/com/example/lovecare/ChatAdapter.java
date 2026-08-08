@@ -11,6 +11,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,16 +57,27 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         holder.tvLastMessage.setText(item.getLastMessage());
         holder.tvTime.setText(item.getTime());
         
-        if (item.getAvatarResId() != 0) {
-            holder.ivAvatar.setImageResource(item.getAvatarResId());
+        String photoUrl = item.getPhotoUrl();
+        if (photoUrl != null && !photoUrl.isEmpty() && photoUrl.startsWith("http")) {
+            Glide.with(context)
+                    .load(photoUrl)
+                    .centerCrop()
+                    .placeholder(R.drawable.ic_menu_gallery_girl)
+                    .error(R.drawable.ic_menu_gallery_boy)
+                    .into(holder.ivAvatar);
         } else {
-            holder.ivAvatar.setImageResource(R.drawable.ic_launcher_foreground);
+            if (item.getAvatarResId() != 0) {
+                holder.ivAvatar.setImageResource(item.getAvatarResId());
+            } else {
+                holder.ivAvatar.setImageResource(R.drawable.ic_menu_gallery_girl);
+            }
         }
 
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, LoveSpaceMessage.class);
+            intent.putExtra("userId",   item.getUserId());
             intent.putExtra("username", item.getUsername());
-            intent.putExtra("avatarResId", item.getAvatarResId());
+            intent.putExtra("userPhoto", item.getPhotoUrl());
             context.startActivity(intent);
         });
     }

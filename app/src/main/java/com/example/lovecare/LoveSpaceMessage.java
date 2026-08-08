@@ -8,6 +8,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -16,12 +18,20 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class LoveSpaceMessage extends AppCompatActivity {
 
@@ -33,11 +43,35 @@ public class LoveSpaceMessage extends AppCompatActivity {
     private ChatMessageAdapter messageAdapter;
     private List<ChatMessage> messageList;
 
+    private FirebaseAuth mAuth;
+    private DatabaseReference chatRef;
+    private String myUid;
+    private String partnerUid;
+    private String chatId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_love_space_message);
+
+        mAuth = FirebaseAuth.getInstance();
+        if (mAuth.getCurrentUser() == null) {
+            finish();
+            return;
+        }
+        myUid = mAuth.getCurrentUser().getUid();
+
+        partnerUid = getIntent().getStringExtra("userId");
+        if (partnerUid == null || partnerUid.isEmpty()) {
+            Toast.makeText(this, "Invalid partner details", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // Generate unique chatId alphabetically to match both users
+        chatId = myUid.compareTo(partnerUid) < 0 ? myUid + "_" + partnerUid : partnerUid + "_" + myUid;
+        chatRef = FirebaseDatabase.getInstance().getReference("chats").child(chatId).child("messages");
 
         View root = findViewById(R.id.messageRoot);
         if (root != null) {
@@ -77,23 +111,44 @@ public class LoveSpaceMessage extends AppCompatActivity {
         if (username != null && !username.isEmpty()) {
             tvChatUsername.setText(username);
         } else {
-            tvChatUsername.setText("testacc");
+            tvChatUsername.setText("Chat Conversation");
         }
     }
 
     private void setupMessageList() {
         messageList = new ArrayList<>();
-        String name = tvChatUsername.getText().toString();
-
-        messageList.add(new ChatMessage("Hey there! Welcome to LoveCare.", "2:40 PM", false));
-        messageList.add(new ChatMessage("Hi " + name + "! How are you doing today?", "2:41 PM", true));
-        messageList.add(new ChatMessage("Doing great! Glad to connect with you here.", "2:43 PM", false));
-
         messageAdapter = new ChatMessageAdapter(this, messageList);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setStackFromEnd(true);
         rvMessages.setLayoutManager(layoutManager);
         rvMessages.setAdapter(messageAdapter);
+
+        // Listen for message updates in Firebase Realtime Database
+        chatRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                messageList.clear();
+                for (DataSnapshot msgSnap : snapshot.getChildren()) {
+                    String senderId = msgSnap.child("senderId").getValue(String.class);
+                    String text = msgSnap.child("messageText").getValue(String.class);
+                    String time = msgSnap.child("time").getValue(String.class);
+
+                    if (senderId != null && text != null) {
+                        boolean isSentByMe = senderId.equals(myUid);
+                        messageList.add(new ChatMessage(text, time != null ? time : "", isSentByMe));
+                    }
+                }
+                messageAdapter.notifyDataSetChanged();
+                if (!messageList.isEmpty()) {
+                    rvMessages.smoothScrollToPosition(messageList.size() - 1);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(LoveSpaceMessage.this, "Failed to load messages", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void setupSendButton() {
@@ -103,9 +158,17 @@ public class LoveSpaceMessage extends AppCompatActivity {
             String text = etChatMessage.getText().toString().trim();
             if (!text.isEmpty()) {
                 String currentTime = new SimpleDateFormat("h:mm a", Locale.getDefault()).format(new Date());
-                messageList.add(new ChatMessage(text, currentTime, true));
-                messageAdapter.notifyItemInserted(messageList.size() - 1);
-                rvMessages.smoothScrollToPosition(messageList.size() - 1);
+
+                Map<String, Object> messageMap = new HashMap<>();
+                messageMap.put("senderId", myUid);
+                messageMap.put("receiverId", partnerUid);
+                messageMap.put("messageText", text);
+                messageMap.put("timestamp", System.currentTimeMillis());
+                messageMap.put("time", currentTime);
+
+                chatRef.push().setValue(messageMap)
+                        .addOnFailureListener(e -> Toast.makeText(LoveSpaceMessage.this, "Message send failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+
                 etChatMessage.setText("");
             }
         });
