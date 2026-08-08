@@ -375,13 +375,35 @@ public class HomeActivity extends AppCompatActivity {
         if (photoUrl == null || photoUrl.isEmpty()) photoUrl = user.getString("photo");
 
         if (photoUrl != null && !photoUrl.isEmpty() && photoUrl.startsWith("http")) {
-            flLetterAvatar.setVisibility(View.GONE);
-            ivProfileImage.setVisibility(View.VISIBLE);
+            // Instantly show letter avatar while downloading real image to hide network latency
+            flLetterAvatar.setVisibility(View.VISIBLE);
+            ivProfileImage.setVisibility(View.INVISIBLE);
+            char firstLetter = name.trim().length() > 0 ? Character.toUpperCase(name.trim().charAt(0)) : '?';
+            tvAvatarLetter.setText(String.valueOf(firstLetter));
+
             Glide.with(this)
                     .load(photoUrl)
                     .centerCrop()
-                    .placeholder(R.drawable.ic_menu_gallery_girl)
-                    .error(R.drawable.ic_menu_gallery_boy)
+                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e, 
+                                                    Object model, 
+                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, 
+                                                    boolean isFirstResource) {
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(android.graphics.drawable.Drawable resource, 
+                                                       Object model, 
+                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, 
+                                                       com.bumptech.glide.load.DataSource dataSource, 
+                                                       boolean isFirstResource) {
+                            flLetterAvatar.setVisibility(View.GONE);
+                            ivProfileImage.setVisibility(View.VISIBLE);
+                            return false;
+                        }
+                    })
                     .into(ivProfileImage);
         } else {
             // fallback text-based letter avatar

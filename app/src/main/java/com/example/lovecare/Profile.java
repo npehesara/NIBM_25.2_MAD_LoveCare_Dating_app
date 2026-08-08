@@ -25,6 +25,9 @@ public class Profile extends AppCompatActivity {
 
     private ImageView ivProfilePicture;
     private TextView tvProfileName, tvProfileBio;
+    private View flProfileLetterAvatar;
+    private TextView tvProfileAvatarLetter;
+
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
@@ -54,6 +57,9 @@ public class Profile extends AppCompatActivity {
         ivProfilePicture = findViewById(R.id.ivProfilePicture);
         tvProfileName    = findViewById(R.id.tvProfileName);
         tvProfileBio     = findViewById(R.id.tvProfileBio);
+        flProfileLetterAvatar = findViewById(R.id.flProfileLetterAvatar);
+        tvProfileAvatarLetter = findViewById(R.id.tvProfileAvatarLetter);
+
 
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -161,15 +167,41 @@ public class Profile extends AppCompatActivity {
                         String photoUrl = documentSnapshot.getString("photoUrl");
                         if (photoUrl == null || photoUrl.isEmpty()) photoUrl = documentSnapshot.getString("photo");
 
-                        if (photoUrl != null && !photoUrl.isEmpty()) {
+                        if (photoUrl != null && !photoUrl.isEmpty() && photoUrl.startsWith("http")) {
+                            flProfileLetterAvatar.setVisibility(View.VISIBLE);
+                            ivProfilePicture.setVisibility(View.INVISIBLE);
+                            char firstLetter = name.trim().length() > 0 ? Character.toUpperCase(name.trim().charAt(0)) : '?';
+                            tvProfileAvatarLetter.setText(String.valueOf(firstLetter));
+
                             Glide.with(Profile.this)
                                     .load(photoUrl)
                                     .centerCrop()
-                                    .placeholder(R.drawable.ic_menu_gallery_girl)
-                                    .error(R.drawable.ic_menu_gallery_boy)
+                                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                                        @Override
+                                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e, 
+                                                                    Object model, 
+                                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, 
+                                                                    boolean isFirstResource) {
+                                            return false;
+                                        }
+
+                                        @Override
+                                        public boolean onResourceReady(android.graphics.drawable.Drawable resource, 
+                                                                       Object model, 
+                                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, 
+                                                                       com.bumptech.glide.load.DataSource dataSource, 
+                                                                       boolean isFirstResource) {
+                                            flProfileLetterAvatar.setVisibility(View.GONE);
+                                            ivProfilePicture.setVisibility(View.VISIBLE);
+                                            return false;
+                                        }
+                                    })
                                     .into(ivProfilePicture);
                         } else {
-                            ivProfilePicture.setImageResource(R.drawable.ic_menu_gallery_girl);
+                            ivProfilePicture.setVisibility(View.GONE);
+                            flProfileLetterAvatar.setVisibility(View.VISIBLE);
+                            char firstLetter = name.trim().length() > 0 ? Character.toUpperCase(name.trim().charAt(0)) : '?';
+                            tvProfileAvatarLetter.setText(String.valueOf(firstLetter));
                         }
                     }
                 })

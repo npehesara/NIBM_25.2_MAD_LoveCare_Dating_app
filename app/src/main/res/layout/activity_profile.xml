@@ -38,12 +38,37 @@
                     android:id="@+id/ivProfilePicture"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:src="@drawable/loginbg"
                     android:scaleType="centerCrop"
                     app:shapeAppearanceOverlay="@style/CircleImage"
                     android:padding="4dp"
                     app:strokeColor="#FF2D55"
-                    app:strokeWidth="2dp"/>
+                    app:strokeWidth="2dp" />
+
+                <!-- Circular Fallback Letter Avatar -->
+                <FrameLayout
+                    android:id="@+id/flProfileLetterAvatar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="4dp"
+                    android:visibility="gone">
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:src="#FF2D55"
+                        android:scaleType="centerCrop"
+                        app:shapeAppearanceOverlay="@style/CircleImage" />
+
+                    <TextView
+                        android:id="@+id/tvProfileAvatarLetter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:textColor="#FFFFFF"
+                        android:textSize="54sp"
+                        android:textStyle="bold"
+                        android:text="?" />
+                </FrameLayout>
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/fabEditPhoto"
