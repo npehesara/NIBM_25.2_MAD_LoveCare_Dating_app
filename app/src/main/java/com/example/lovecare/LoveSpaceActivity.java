@@ -7,11 +7,15 @@ import android.os.Looper;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.CalendarView;
+import android.widget.BaseAdapter;
+import android.widget.FrameLayout;
+import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import java.util.Set;
+import java.util.HashSet;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -57,6 +61,13 @@ public class LoveSpaceActivity extends AppCompatActivity {
     private static final int PROFILE_HOLD_DURATION = 1500;
 
     private String selectedCalendarDate;
+    private GridView calendarGridView;
+    private TextView tvMonthYear;
+    private Calendar calendarInstance;
+    private final Set<String> datesWithEvents = new HashSet<>();
+    private final List<String> gridDays = new ArrayList<>();
+    private CalendarAdapter calendarAdapter;
+    private com.google.firebase.firestore.ListenerRegistration eventsListenerRegistration;
 
     // ── XP & Level Views ──────────────────────────────────────────────────────
     private TextView tvLevelInfo;
@@ -108,8 +119,8 @@ public class LoveSpaceActivity extends AppCompatActivity {
         tvUserEmojiOverlay = findViewById(R.id.tvUserEmojiOverlay);
 
         tvLevelInfo = findViewById(R.id.tvLevelInfo);
-        tvXpRatio   = findViewById(R.id.tvXpRatio);
-        xpProgress  = findViewById(R.id.xpProgress);
+        tvXpRatio = findViewById(R.id.tvXpRatio);
+        xpProgress = findViewById(R.id.xpProgress);
 
         // LoveSpace state views
         llEmptyState = findViewById(R.id.llEmptyState);
@@ -169,6 +180,9 @@ public class LoveSpaceActivity extends AppCompatActivity {
         if (loveSpaceListenerRegistration != null) {
             loveSpaceListenerRegistration.remove();
         }
+        if (eventsListenerRegistration != null) {
+            eventsListenerRegistration.remove();
+        }
     }
 
     // ── Load Active LoveSpace ─────────────────────────────────────────────────
@@ -192,6 +206,7 @@ public class LoveSpaceActivity extends AppCompatActivity {
                         loadPartnerProfile();
                         setupRealtimeXpAndStreak();
                         setupRealtimeLoveSpaceListener();
+                        setupRealtimeEventsListener();
                         return;
                     }
                     // Check where user is user2Uid
@@ -209,6 +224,7 @@ public class LoveSpaceActivity extends AppCompatActivity {
                                     loadPartnerProfile();
                                     setupRealtimeXpAndStreak();
                                     setupRealtimeLoveSpaceListener();
+                                    setupRealtimeEventsListener();
                                 } else {
                                     showEmptyState();
                                 }
@@ -219,7 +235,8 @@ public class LoveSpaceActivity extends AppCompatActivity {
     }
 
     private void setupRealtimeLoveSpaceListener() {
-        if (activeLoveSpaceId == null || activeLoveSpaceId.isEmpty()) return;
+        if (activeLoveSpaceId == null || activeLoveSpaceId.isEmpty())
+            return;
 
         if (loveSpaceListenerRegistration != null) {
             loveSpaceListenerRegistration.remove();
@@ -228,7 +245,8 @@ public class LoveSpaceActivity extends AppCompatActivity {
         loveSpaceListenerRegistration = db.collection("lovespaces")
                 .document(activeLoveSpaceId)
                 .addSnapshotListener((snapshot, error) -> {
-                    if (error != null || snapshot == null || !snapshot.exists()) return;
+                    if (error != null || snapshot == null || !snapshot.exists())
+                        return;
 
                     String myMood = isUser1 ? snapshot.getString("user1Mood") : snapshot.getString("user2Mood");
                     String partnerMood = isUser1 ? snapshot.getString("user2Mood") : snapshot.getString("user1Mood");
@@ -254,8 +272,10 @@ public class LoveSpaceActivity extends AppCompatActivity {
     // ── Realtime Message Count & XP / Level Streak ───────────────────────────
 
     private void setupRealtimeXpAndStreak() {
-        if (currentUid == null || partnerUid == null) return;
-        String chatId = currentUid.compareTo(partnerUid) < 0 ? currentUid + "_" + partnerUid : partnerUid + "_" + currentUid;
+        if (currentUid == null || partnerUid == null)
+            return;
+        String chatId = currentUid.compareTo(partnerUid) < 0 ? currentUid + "_" + partnerUid
+                : partnerUid + "_" + currentUid;
 
         if (chatRef != null && chatMessageListener != null) {
             chatRef.removeEventListener(chatMessageListener);
@@ -271,7 +291,8 @@ public class LoveSpaceActivity extends AppCompatActivity {
                 int currentLevelXp = (int) (totalXp % 1000);
 
                 if (tvLevelInfo != null) {
-                    tvLevelInfo.setText("LEVEL " + String.format(Locale.getDefault(), "%02d", level) + " 🔥 (" + msgCount + " msgs)");
+                    tvLevelInfo.setText("LEVEL " + String.format(Locale.getDefault(), "%02d", level) + " 🔥 ("
+                            + msgCount + " msgs)");
                 }
                 if (tvXpRatio != null) {
                     tvXpRatio.setText(currentLevelXp + " / 1000 XP");
@@ -283,19 +304,22 @@ public class LoveSpaceActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
+            public void onCancelled(@NonNull DatabaseError error) {
+            }
         };
         chatRef.addValueEventListener(chatMessageListener);
     }
 
     private void loadPartnerProfile() {
-        if (partnerUid == null || partnerUid.isEmpty()) return;
+        if (partnerUid == null || partnerUid.isEmpty())
+            return;
 
         db.collection("users").document(partnerUid).get()
                 .addOnSuccessListener(userDoc -> {
                     if (userDoc.exists()) {
                         String name = userDoc.getString("name");
-                        if (name == null || name.isEmpty()) name = "Partner";
+                        if (name == null || name.isEmpty())
+                            name = "Partner";
 
                         View flPartnerLetterAvatar = findViewById(R.id.flPartnerLetterAvatar);
                         TextView tvPartnerAvatarLetter = findViewById(R.id.tvPartnerAvatarLetter);
@@ -311,32 +335,39 @@ public class LoveSpaceActivity extends AppCompatActivity {
                         }
 
                         String photoUrl = userDoc.getString("photoUrl");
-                        if (photoUrl == null || photoUrl.isEmpty()) photoUrl = userDoc.getString("photo");
+                        if (photoUrl == null || photoUrl.isEmpty())
+                            photoUrl = userDoc.getString("photo");
 
-                        if (photoUrl != null && !photoUrl.isEmpty() && photoUrl.startsWith("http") && ivPartnerProfile != null) {
+                        if (photoUrl != null && !photoUrl.isEmpty() && photoUrl.startsWith("http")
+                                && ivPartnerProfile != null) {
                             Glide.with(this)
                                     .load(photoUrl)
                                     .centerCrop()
-                                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
-                                        @Override
-                                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
-                                                                    Object model,
-                                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
-                                                                    boolean isFirstResource) {
-                                            return false;
-                                        }
+                                    .listener(
+                                            new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                                                @Override
+                                                public boolean onLoadFailed(
+                                                        @androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
+                                                        Object model,
+                                                        com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                        boolean isFirstResource) {
+                                                    return false;
+                                                }
 
-                                        @Override
-                                        public boolean onResourceReady(android.graphics.drawable.Drawable resource,
-                                                                       Object model,
-                                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
-                                                                       com.bumptech.glide.load.DataSource dataSource,
-                                                                       boolean isFirstResource) {
-                                            if (flPartnerLetterAvatar != null) flPartnerLetterAvatar.setVisibility(View.GONE);
-                                            if (ivPartnerProfile != null) ivPartnerProfile.setVisibility(View.VISIBLE);
-                                            return false;
-                                        }
-                                    })
+                                                @Override
+                                                public boolean onResourceReady(
+                                                        android.graphics.drawable.Drawable resource,
+                                                        Object model,
+                                                        com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                        com.bumptech.glide.load.DataSource dataSource,
+                                                        boolean isFirstResource) {
+                                                    if (flPartnerLetterAvatar != null)
+                                                        flPartnerLetterAvatar.setVisibility(View.GONE);
+                                                    if (ivPartnerProfile != null)
+                                                        ivPartnerProfile.setVisibility(View.VISIBLE);
+                                                    return false;
+                                                }
+                                            })
                                     .into(ivPartnerProfile);
                         }
 
@@ -350,7 +381,8 @@ public class LoveSpaceActivity extends AppCompatActivity {
                 .addOnSuccessListener(userDoc -> {
                     if (userDoc.exists()) {
                         String name = userDoc.getString("name");
-                        if (name == null || name.isEmpty()) name = "User";
+                        if (name == null || name.isEmpty())
+                            name = "User";
 
                         View flUserLetterAvatar = findViewById(R.id.flUserLetterAvatar);
                         TextView tvUserAvatarLetter = findViewById(R.id.tvUserAvatarLetter);
@@ -366,32 +398,39 @@ public class LoveSpaceActivity extends AppCompatActivity {
                         }
 
                         String photoUrl = userDoc.getString("photoUrl");
-                        if (photoUrl == null || photoUrl.isEmpty()) photoUrl = userDoc.getString("photo");
+                        if (photoUrl == null || photoUrl.isEmpty())
+                            photoUrl = userDoc.getString("photo");
 
-                        if (photoUrl != null && !photoUrl.isEmpty() && photoUrl.startsWith("http") && ivUserProfile != null) {
+                        if (photoUrl != null && !photoUrl.isEmpty() && photoUrl.startsWith("http")
+                                && ivUserProfile != null) {
                             Glide.with(this)
                                     .load(photoUrl)
                                     .centerCrop()
-                                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
-                                        @Override
-                                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
-                                                                    Object model,
-                                                                    com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
-                                                                    boolean isFirstResource) {
-                                            return false;
-                                        }
+                                    .listener(
+                                            new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                                                @Override
+                                                public boolean onLoadFailed(
+                                                        @androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
+                                                        Object model,
+                                                        com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                        boolean isFirstResource) {
+                                                    return false;
+                                                }
 
-                                        @Override
-                                        public boolean onResourceReady(android.graphics.drawable.Drawable resource,
-                                                                       Object model,
-                                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
-                                                                       com.bumptech.glide.load.DataSource dataSource,
-                                                                       boolean isFirstResource) {
-                                            if (flUserLetterAvatar != null) flUserLetterAvatar.setVisibility(View.GONE);
-                                            if (ivUserProfile != null) ivUserProfile.setVisibility(View.VISIBLE);
-                                            return false;
-                                        }
-                                    })
+                                                @Override
+                                                public boolean onResourceReady(
+                                                        android.graphics.drawable.Drawable resource,
+                                                        Object model,
+                                                        com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                        com.bumptech.glide.load.DataSource dataSource,
+                                                        boolean isFirstResource) {
+                                                    if (flUserLetterAvatar != null)
+                                                        flUserLetterAvatar.setVisibility(View.GONE);
+                                                    if (ivUserProfile != null)
+                                                        ivUserProfile.setVisibility(View.VISIBLE);
+                                                    return false;
+                                                }
+                                            })
                                     .into(ivUserProfile);
                         }
                     }
@@ -421,7 +460,8 @@ public class LoveSpaceActivity extends AppCompatActivity {
     private void showCloseLoveSpaceDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Close LoveSpace")
-                .setMessage("Are you sure you want to close this LoveSpace? This will end the connection for both of you. 💔")
+                .setMessage(
+                        "Are you sure you want to close this LoveSpace? This will end the connection for both of you. 💔")
                 .setPositiveButton("Close", (dialog, which) -> closeLoveSpace())
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -441,6 +481,11 @@ public class LoveSpaceActivity extends AppCompatActivity {
                     Toast.makeText(this, "LoveSpace closed 💔", Toast.LENGTH_SHORT).show();
                     activeLoveSpaceId = null;
                     partnerUid = null;
+                    if (eventsListenerRegistration != null) {
+                        eventsListenerRegistration.remove();
+                        eventsListenerRegistration = null;
+                    }
+                    datesWithEvents.clear();
                     showEmptyState();
 
                     // Delete stale mutual match notifications between these two users
@@ -448,12 +493,13 @@ public class LoveSpaceActivity extends AppCompatActivity {
                         cleanupNotificationsBetweenUsers(currentUid, oldPartnerUid);
                     }
                 })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Failed to close LoveSpace: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> Toast
+                        .makeText(this, "Failed to close LoveSpace: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
     private void cleanupNotificationsBetweenUsers(String uid1, String uid2) {
-        if (uid1 == null || uid2 == null) return;
+        if (uid1 == null || uid2 == null)
+            return;
         db.collection("notifications")
                 .whereEqualTo("toUid", uid1)
                 .whereEqualTo("fromUid", uid2)
@@ -477,50 +523,141 @@ public class LoveSpaceActivity extends AppCompatActivity {
     // ── Calendar Interaction & Event Backend Integration ─────────────────────
 
     private void setupCalendarInteraction() {
-        CalendarView calendarView = findViewById(R.id.calendarView);
-        if (calendarView == null) return;
+        calendarGridView = findViewById(R.id.calendarGridView);
+        tvMonthYear = findViewById(R.id.tvMonthYear);
+        View btnPrevMonth = findViewById(R.id.btnPrevMonth);
+        View btnNextMonth = findViewById(R.id.btnNextMonth);
 
-        Calendar c = Calendar.getInstance();
+        calendarInstance = Calendar.getInstance();
+        Calendar today = Calendar.getInstance();
         selectedCalendarDate = String.format(Locale.getDefault(), "%02d/%02d/%d",
-                c.get(Calendar.DAY_OF_MONTH), (c.get(Calendar.MONTH) + 1), c.get(Calendar.YEAR));
+                today.get(Calendar.DAY_OF_MONTH), (today.get(Calendar.MONTH) + 1), today.get(Calendar.YEAR));
 
-        calendarView.setOnDateChangeListener((view, year, month, dayOfMonth) -> {
-            selectedCalendarDate = String.format(Locale.getDefault(), "%02d/%02d/%d", dayOfMonth, (month + 1), year);
-            if (calendarContextMenuCard != null && calendarContextMenuCard.getVisibility() == View.VISIBLE) {
-                hideCalendarContextMenu();
-            }
-        });
+        if (btnPrevMonth != null) {
+            btnPrevMonth.setOnClickListener(v -> {
+                calendarInstance.add(Calendar.MONTH, -1);
+                updateCalendarGrid();
+            });
+        }
 
-        calendarView.setOnTouchListener(new View.OnTouchListener() {
-            private final Runnable longPressRunnable = () -> showCalendarContextMenu();
-            private float startX, startY;
-            private static final int CALENDAR_HOLD_THRESHOLD = 800;
+        if (btnNextMonth != null) {
+            btnNextMonth.setOnClickListener(v -> {
+                calendarInstance.add(Calendar.MONTH, 1);
+                updateCalendarGrid();
+            });
+        }
 
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        startX = event.getX();
-                        startY = event.getY();
-                        longPressHandler.postDelayed(longPressRunnable, CALENDAR_HOLD_THRESHOLD);
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        if (Math.abs(event.getX() - startX) > 30 || Math.abs(event.getY() - startY) > 30) {
-                            longPressHandler.removeCallbacks(longPressRunnable);
-                        }
-                        break;
-                    case MotionEvent.ACTION_UP:
-                    case MotionEvent.ACTION_CANCEL:
-                        longPressHandler.removeCallbacks(longPressRunnable);
-                        break;
+        if (calendarGridView != null) {
+            calendarGridView.setOnItemClickListener((parent, view, position, id) -> {
+                String dateStr = gridDays.get(position);
+                if (!dateStr.isEmpty()) {
+                    selectedCalendarDate = dateStr;
+                    updateCalendarGrid();
+                    if (calendarContextMenuCard != null && calendarContextMenuCard.getVisibility() == View.VISIBLE) {
+                        hideCalendarContextMenu();
+                    }
+                }
+            });
+
+            calendarGridView.setOnItemLongClickListener((parent, view, position, id) -> {
+                String dateStr = gridDays.get(position);
+                if (!dateStr.isEmpty()) {
+                    selectedCalendarDate = dateStr;
+                    updateCalendarGrid();
+                    showCalendarContextMenu();
+                    return true;
                 }
                 return false;
-            }
-        });
+            });
+        }
+
+        View btnCalendarAddEventDirect = findViewById(R.id.btnCalendarAddEventDirect);
+        View btnCalendarAddNoteDirect = findViewById(R.id.btnCalendarAddNoteDirect);
+        View btnCalendarViewDetailsDirect = findViewById(R.id.btnCalendarViewDetailsDirect);
+
+        if (btnCalendarAddEventDirect != null) {
+            btnCalendarAddEventDirect.setOnClickListener(v -> {
+                showAddEventDialog(selectedCalendarDate);
+            });
+        }
+
+        if (btnCalendarAddNoteDirect != null) {
+            btnCalendarAddNoteDirect.setOnClickListener(v -> {
+                showAddNoteDialog(selectedCalendarDate);
+            });
+        }
+
+        if (btnCalendarViewDetailsDirect != null) {
+            btnCalendarViewDetailsDirect.setOnClickListener(v -> {
+                showViewDetailsDialog(selectedCalendarDate);
+            });
+        }
+
+        updateCalendarGrid();
+    }
+
+    private void updateCalendarGrid() {
+        if (calendarGridView == null || tvMonthYear == null) return;
+
+        SimpleDateFormat sdf = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
+        tvMonthYear.setText(sdf.format(calendarInstance.getTime()));
+
+        gridDays.clear();
+
+        Calendar monthCal = (Calendar) calendarInstance.clone();
+        monthCal.set(Calendar.DAY_OF_MONTH, 1);
+
+        int firstDayOfWeek = monthCal.get(Calendar.DAY_OF_WEEK);
+        int maxDays = monthCal.getActualMaximum(Calendar.DAY_OF_MONTH);
+
+        int emptyCells = firstDayOfWeek - 1;
+        for (int i = 0; i < emptyCells; i++) {
+            gridDays.add("");
+        }
+
+        int currentYear = monthCal.get(Calendar.YEAR);
+        int currentMonthValue = monthCal.get(Calendar.MONTH) + 1;
+        for (int day = 1; day <= maxDays; day++) {
+            gridDays.add(String.format(Locale.getDefault(), "%02d/%02d/%d", day, currentMonthValue, currentYear));
+        }
+
+        if (calendarAdapter == null) {
+            calendarAdapter = new CalendarAdapter();
+            calendarGridView.setAdapter(calendarAdapter);
+        } else {
+            calendarAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private void setupRealtimeEventsListener() {
+        if (activeLoveSpaceId == null || activeLoveSpaceId.isEmpty()) return;
+
+        if (eventsListenerRegistration != null) {
+            eventsListenerRegistration.remove();
+        }
+
+        eventsListenerRegistration = db.collection("lovespace_events")
+                .whereEqualTo("loveSpaceId", activeLoveSpaceId)
+                .addSnapshotListener((snapshot, error) -> {
+                    if (error != null) {
+                        return;
+                    }
+                    datesWithEvents.clear();
+                    if (snapshot != null) {
+                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                            String dateStr = doc.getString("date");
+                            if (dateStr != null) {
+                                datesWithEvents.add(dateStr);
+                            }
+                        }
+                    }
+                    updateCalendarGrid();
+                });
     }
 
     private void showCalendarContextMenu() {
-        if (calendarContextMenuCard == null) return;
+        if (calendarContextMenuCard == null)
+            return;
 
         calendarContextMenuCard.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
 
@@ -543,10 +680,12 @@ public class LoveSpaceActivity extends AppCompatActivity {
     }
 
     private void hideCalendarContextMenu() {
-        if (calendarContextMenuCard == null || calendarContextMenuCard.getVisibility() != View.VISIBLE) return;
+        if (calendarContextMenuCard == null || calendarContextMenuCard.getVisibility() != View.VISIBLE)
+            return;
 
         if (calendarMenuDim != null) {
-            calendarMenuDim.animate().alpha(0f).setDuration(200).withEndAction(() -> calendarMenuDim.setVisibility(View.GONE)).start();
+            calendarMenuDim.animate().alpha(0f).setDuration(200)
+                    .withEndAction(() -> calendarMenuDim.setVisibility(View.GONE)).start();
         }
 
         calendarContextMenuCard.animate()
@@ -559,7 +698,8 @@ public class LoveSpaceActivity extends AppCompatActivity {
     }
 
     private void setupCalendarMenuButtons() {
-        if (calendarContextMenuCard == null) return;
+        if (calendarContextMenuCard == null)
+            return;
 
         findViewById(R.id.btnCalendarAddEvent).setOnClickListener(v -> {
             hideCalendarContextMenu();
@@ -582,7 +722,8 @@ public class LoveSpaceActivity extends AppCompatActivity {
     }
 
     private void setupUserLongPress(View container) {
-        if (container == null) return;
+        if (container == null)
+            return;
 
         final Runnable longPressRunnable = () -> {
             isLongPressTriggered = true;
@@ -632,7 +773,7 @@ public class LoveSpaceActivity extends AppCompatActivity {
     }
 
     private void setupEmojiSelection() {
-        int[] emojiIds = {R.id.tvEmoji1, R.id.tvEmoji2, R.id.tvEmoji3, R.id.tvEmoji4};
+        int[] emojiIds = { R.id.tvEmoji1, R.id.tvEmoji2, R.id.tvEmoji3, R.id.tvEmoji4 };
         for (int id : emojiIds) {
             TextView emojiTv = findViewById(id);
             if (emojiTv != null) {
@@ -659,8 +800,8 @@ public class LoveSpaceActivity extends AppCompatActivity {
                         String moodField = isUser1 ? "user1Mood" : "user2Mood";
                         db.collection("lovespaces").document(activeLoveSpaceId)
                                 .update(moodField, selectedEmoji)
-                                .addOnSuccessListener(aVoid ->
-                                        Toast.makeText(this, "Mood updated! " + selectedEmoji, Toast.LENGTH_SHORT).show());
+                                .addOnSuccessListener(aVoid -> Toast
+                                        .makeText(this, "Mood updated! " + selectedEmoji, Toast.LENGTH_SHORT).show());
                     }
                 });
             }
@@ -724,10 +865,10 @@ public class LoveSpaceActivity extends AppCompatActivity {
 
         db.collection("lovespace_events")
                 .add(event)
-                .addOnSuccessListener(docRef ->
-                        Toast.makeText(this, type + " saved for " + date + " 💕", Toast.LENGTH_SHORT).show())
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Failed to save " + type + ": " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                .addOnSuccessListener(
+                        docRef -> Toast.makeText(this, type + " saved for " + date + " 💕", Toast.LENGTH_SHORT).show())
+                .addOnFailureListener(e -> Toast
+                        .makeText(this, "Failed to save " + type + ": " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
     private void showViewDetailsDialog(String date) {
@@ -746,7 +887,8 @@ public class LoveSpaceActivity extends AppCompatActivity {
                     if (querySnapshot.isEmpty()) {
                         new AlertDialog.Builder(this)
                                 .setTitle("📅 Plans for " + date)
-                                .setMessage("No events or notes added for this date yet. Tap 'Add Event' or 'Add Note' to create one! 💕")
+                                .setMessage(
+                                        "No events or notes added for this date yet. Tap 'Add Event' or 'Add Note' to create one! 💕")
                                 .setPositiveButton("OK", null)
                                 .show();
                         return;
@@ -768,13 +910,64 @@ public class LoveSpaceActivity extends AppCompatActivity {
                             .setTitle("✨ Plans for " + date)
                             .setItems(itemsArray, (dialog, which) -> {
                                 QueryDocumentSnapshot selectedDoc = docs.get(which);
-                                showDeleteEventConfirmDialog(selectedDoc.getId(), date);
+                                showEventActionDialog(selectedDoc, date);
                             })
                             .setPositiveButton("Close", null)
                             .show();
                 })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Error fetching events: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> Toast
+                        .makeText(this, "Error fetching events: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    private void showEventActionDialog(QueryDocumentSnapshot doc, String date) {
+        String type = doc.getString("type");
+        String currentTitle = doc.getString("title");
+        String docId = doc.getId();
+
+        String[] options = {"✏️ Edit " + type, "🗑️ Delete " + type};
+
+        new AlertDialog.Builder(this)
+                .setTitle("Options for " + (currentTitle != null ? currentTitle : "Untitled"))
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        showEditEventDialog(docId, currentTitle, type, date);
+                    } else if (which == 1) {
+                        showDeleteEventConfirmDialog(docId, date);
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void showEditEventDialog(String docId, String currentTitle, String type, String date) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("✏️ Edit " + type + " for " + date);
+
+        final TextInputEditText input = new TextInputEditText(this);
+        input.setText(currentTitle);
+        if ("Note".equalsIgnoreCase(type)) {
+            input.setHint("Enter your special note...");
+        } else {
+            input.setHint("Enter event/activity name...");
+        }
+
+        FrameLayout container = new FrameLayout(this);
+        int paddingPx = (int) (20 * getResources().getDisplayMetrics().density);
+        container.setPadding(paddingPx, paddingPx / 2, paddingPx, paddingPx / 2);
+        container.addView(input);
+        builder.setView(container);
+
+        builder.setPositiveButton("Update", (dialog, which) -> {
+            String updatedTitle = input.getText() != null ? input.getText().toString().trim() : "";
+            if (!updatedTitle.isEmpty()) {
+                db.collection("lovespace_events").document(docId)
+                        .update("title", updatedTitle)
+                        .addOnSuccessListener(aVoid -> Toast.makeText(this, type + " updated successfully! 💕", Toast.LENGTH_SHORT).show())
+                        .addOnFailureListener(e -> Toast.makeText(this, "Failed to update " + type + ": " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+        });
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
     }
 
     private void showDeleteEventConfirmDialog(String eventDocId, String date) {
@@ -784,12 +977,76 @@ public class LoveSpaceActivity extends AppCompatActivity {
                 .setPositiveButton("Delete", (dialog, which) -> {
                     db.collection("lovespace_events").document(eventDocId)
                             .delete()
-                            .addOnSuccessListener(aVoid ->
-                                    Toast.makeText(this, "Deleted successfully", Toast.LENGTH_SHORT).show())
-                            .addOnFailureListener(e ->
-                                    Toast.makeText(this, "Failed to delete item", Toast.LENGTH_SHORT).show());
+                            .addOnSuccessListener(
+                                    aVoid -> Toast.makeText(this, "Deleted successfully", Toast.LENGTH_SHORT).show())
+                            .addOnFailureListener(
+                                    e -> Toast.makeText(this, "Failed to delete item", Toast.LENGTH_SHORT).show());
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private class CalendarAdapter extends BaseAdapter {
+        @Override
+        public int getCount() {
+            return gridDays.size();
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return gridDays.get(position);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+
+        @Override
+        public boolean isEnabled(int position) {
+            return !gridDays.get(position).isEmpty();
+        }
+
+        @Override
+        public View getView(int position, View convertView, android.view.ViewGroup parent) {
+            if (convertView == null) {
+                convertView = getLayoutInflater().inflate(R.layout.item_calendar_day, parent, false);
+            }
+
+            TextView tvDayNumber = convertView.findViewById(R.id.tvDayNumber);
+            View viewDaySelection = convertView.findViewById(R.id.viewDaySelection);
+            View viewDayIndicator = convertView.findViewById(R.id.viewDayIndicator);
+
+            String dateStr = gridDays.get(position);
+
+            if (dateStr.isEmpty()) {
+                tvDayNumber.setText("");
+                viewDaySelection.setVisibility(View.GONE);
+                viewDayIndicator.setVisibility(View.GONE);
+            } else {
+                String[] parts = dateStr.split("/");
+                String dayNum = String.valueOf(Integer.parseInt(parts[0]));
+                tvDayNumber.setText(dayNum);
+
+                if (dateStr.equals(selectedCalendarDate)) {
+                    viewDaySelection.setVisibility(View.VISIBLE);
+                } else {
+                    viewDaySelection.setVisibility(View.GONE);
+                }
+
+                if (datesWithEvents.contains(dateStr)) {
+                    viewDayIndicator.setVisibility(View.VISIBLE);
+                    if (dateStr.equals(selectedCalendarDate)) {
+                        viewDayIndicator.setBackgroundResource(R.drawable.bg_white_circle);
+                    } else {
+                        viewDayIndicator.setBackgroundResource(R.drawable.bg_pink_circle);
+                    }
+                } else {
+                    viewDayIndicator.setVisibility(View.INVISIBLE);
+                }
+            }
+
+            return convertView;
+        }
     }
 }
