@@ -69,12 +69,12 @@ public class LoveSpaceActivity extends AppCompatActivity {
     private CalendarAdapter calendarAdapter;
     private com.google.firebase.firestore.ListenerRegistration eventsListenerRegistration;
 
-    // ── XP & Level Views ──────────────────────────────────────────────────────
+    // XP & Level Views
     private TextView tvLevelInfo;
     private TextView tvXpRatio;
     private LinearProgressIndicator xpProgress;
 
-    // ── Firebase ──────────────────────────────────────────────────────────────
+    // Firebase
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private DatabaseReference chatRef;
@@ -84,7 +84,7 @@ public class LoveSpaceActivity extends AppCompatActivity {
     private String activeLoveSpaceId;
     private String partnerUid;
 
-    // ── Views for LoveSpace state ─────────────────────────────────────────────
+    // Views for LoveSpace state
     private LinearLayout llEmptyState;
     private ImageView btnCloseLoveSpace;
     private View xpCard, coupleVisualContainer, calendarCard, bottomNavContainer;
